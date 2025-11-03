@@ -19,6 +19,21 @@ If you have any questions or if you have encountered any inconsistencies, please
 ## 📖 Abstract
 Connected cyber-physical systems perform inference based on real-time inputs from multiple data streams. Uncertain communication delays across data streams challenge the temporal flow of the inference process. State-of-the-art (SotA) non-blocking inference methods rely on a *reference-modality paradigm*, requiring one modality input to be fully received before processing, while depending on costly offline profiling. We propose a novel, *neuro-inspired non-blocking inference paradigm* that primarily employs adaptive temporal windows of integration (TWIs) to dynamically adjust to stochastic delay patterns across heterogeneous streams while relaxing the reference-modality requirement. Our communication-delay-aware framework achieves robust real-time inference with finer-grained control over the accuracy-latency tradeoff. Experiments on the audio-visual event localization (AVEL) task demonstrate superior adaptability to network dynamics compared to SotA approaches.
 
+## 📁 Project Structure
+
+```
+real-time-inference-distributed-multimodal-systems/
+├── data/                       # Directory where all types of data are stored
+├── models/                     # Directory for saving trained models
+├── src/                        # Source code directory
+├── _apply_class_pipeline_audio.py   # Applies audio pipeline over video observations to extract auditory features and embeddings
+├── _apply_class_pipeline_video.py   # Applies video pipeline over video observations to extract visual features and embeddings
+├── _train.py                  # Trains the baseline model for the AVEL task using extracted auditory embeddings and visual features
+├── packetization.py           # Packetizes each video observation into separate auditory and visual streams
+├── plotting_per_snr.py        # Plots the performance curves reported in the paper for each SNR value
+└── wrapper.py                 # Simulates the wrapper operation under packet delay conditions
+```
+
 ## 🛠️ Installation
 
 1. Clone the repository:
@@ -37,7 +52,7 @@ pip install -r requirements.txt
 
 3. Install the AVE dataset from https://github.com/YapengTian/AVE-ECCV18:
 
-Please, download the dataset, extract and place it under the `data\` folder.
+Please, download the dataset, extract and place it under the `data\` folder, having the video observations saved under `data\AVE`
 ```bash
 https://drive.google.com/file/d/1FjKwe79e0u96vdjIVwfRQ1V6SoDHe7kK/view
 ```
