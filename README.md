@@ -2,7 +2,7 @@
 
 This is a research-oriented code package that is primarily intended to allow readers to replicate the results of the paper mentioned below and also encourage and accelerate further research on this topic:
 
-V. Croisfelt, J. H. Inacio de Souza, S. R. Pandey, B. Soret, and P. Popovski, “Real-Time Inference for Distributed Multimodal Systems under Communication Delay Uncertainty,” submitted to ICC 2026.
+V. Croisfelt, J. H. Inacio de Souza, S. R. Pandey, B. Soret, and P. Popovski, **“Real-Time Inference for Distributed Multimodal Systems under Communication Delay Uncertainty,”** submitted to ICC 2026.
 
 <!-- A pre-print version is available on arXiv: [https://arxiv.org/abs/2304.10858](https://arxiv.org/abs/2404.14236). -->
 
