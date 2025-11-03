@@ -19,9 +19,9 @@ Connected cyber-physical systems perform inference based on real-time inputs fro
 
 ## 🛠️ Installation
 
-1. Clone the repository using SSH:
+1. Clone the repository:
 ```bash
-git clone git@github.com:victorkreutzfeldt/real-time-inference-distributed-multimodal-systems.git
+git clone https://github.com/victorkreutzfeldt/real-time-inference-distributed-multimodal-systems.git
 cd real-time-inference-distributed-multimodal-systems
 ```
 
