@@ -33,8 +33,8 @@ parser.add_argument(
     "--variant",
     type=str,
     required=True,
-    choices=["PaMo", "ToMo"],
-    help="Specify the TWI-optimized variant to run: 'PaMo' or 'ToMo'."
+    choices=["SotA", "PaMo", "ToMo"],
+    help="Specify the TWI-optimized variant to run: 'SotA', 'PaMo' or 'ToMo'."
 )
 
 parser.add_argument(
@@ -102,16 +102,24 @@ if args.variant == 'PaMo':
    WINDOW_DURATION = float(np.max(((avg_total_tx_time_audio/ 500), (avg_total_tx_time_video / 160)))) 
 elif args.variant == 'ToMo': 
     WINDOW_DURATION = float(np.max((50 * (avg_total_tx_time_audio/ 500), 16 * (avg_total_tx_time_video / 160))))
+elif args.variant == 'SotA':
+    WINDOW_DURATION = None
 else:
     raise ValueError("Invalid variant specified.")
 
-WINDOW_DURATION = np.ceil(WINDOW_DURATION * 10000) / 10000
-
 # Define stop time based on SNR
 if args.snr_dB == '1.1888': 
-    STOP_TIME = 4.9422 + WINDOW_DURATION
+    STOP_TIME = 4.9422
 else:
-    STOP_TIME = float(np.min((avg_total_tx_time_audio, avg_total_tx_time_video))) + WINDOW_DURATION
+    STOP_TIME = float(np.min((avg_total_tx_time_audio, avg_total_tx_time_video))) 
+
+if args.variant == 'SotA':
+    WINDOW_DURATION = STOP_TIME
+else:
+    STOP_TIME = STOP_TIME + WINDOW_DURATION
+
+# Round WINDOW_DURATION to 4 decimal places
+WINDOW_DURATION = np.ceil(WINDOW_DURATION * 10000) / 10000
 
 # Inference parameters
 MODEL_CHECKPOINT = 'models/classification/per_video/shallow_classifier_multimodal_features_base.pth'
@@ -128,7 +136,8 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 SAVE_PATH = os.path.join(SAVE_DIR, f'{args.variant}_SNR_{args.snr_dB}.gz')
 
 # ================ Logging =====================
-print(f"[INFO] Window duration: {float(WINDOW_DURATION):.3f}s")
+print(f"[INFO] Window duration: {float(WINDOW_DURATION):.4f}s")
+print(f"[INFO] Stop time: {float(STOP_TIME):.4f}s")
 
 # ================ Main =====================
 if __name__ == "__main__":

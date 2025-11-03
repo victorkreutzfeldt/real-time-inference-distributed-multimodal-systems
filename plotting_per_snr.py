@@ -3,7 +3,7 @@ import gzip
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-#plt.rcParams['text.usetex'] = True
+plt.rcParams['text.usetex'] = True
 
 # Save figure path and TikZ coordinates folder
 SAVE_FIG = 'data/results/figs/'
@@ -57,7 +57,7 @@ def compute_statistics(data):
 if __name__ == "__main__":
 
     # Variants
-    variants = ['PaMo', 'ToMo'] 
+    variants = ['SotA', 'PaMo', 'ToMo'] 
 
     plt.figure(figsize=(9, 5))
 
@@ -90,13 +90,7 @@ if __name__ == "__main__":
         x_data = t_seconds
         y_data = stats['avg_hamming_acc'][:num_windows]
 
-        if variant == 'PaMo':
-            sota_pamo = (x_data[-1], y_data[-1])
-        else:
-            sota_tomo = (x_data[-1], y_data[-1])
-
         # Plot average hamming accuracy vs time
-        
         label = rf"{variant}"
 
         if variant == 'PaMo':
@@ -107,7 +101,7 @@ if __name__ == "__main__":
         plt.scatter(x_data[:-1], y_data[:-1], marker=marker_style, s=2, label=label)
 
         # Convert coordinates to TikZ format suitable for \addplot coordinates {...}
-        tikz_coords = " ".join([f"({x:.6f},{y:.6f})" for x, y in zip(x_data, y_data)])
+        tikz_coords = " ".join([f"({x:.6f},{y:.6f})" for x, y in zip(x_data[:-1], y_data[:-1])])
         filename = os.path.join(TIKZ_COORDS_PATH, f"{variant}_SNR_{args.snr_dB}.txt")
         
         with open(filename, "w") as f:
@@ -115,8 +109,6 @@ if __name__ == "__main__":
 
         print(f"Saved TikZ coordinates to {filename}")
 
-    print(sota_pamo, sota_tomo)
-    
     plt.plot(sota_pamo[0], sota_pamo[1], 'ro', label='SotA')
 
     plt.title(r'SNR = ' + f'{args.snr_dB} dB', fontsize=14)
