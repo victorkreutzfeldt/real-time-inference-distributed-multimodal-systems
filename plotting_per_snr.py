@@ -81,14 +81,17 @@ if __name__ == "__main__":
         
         # Compute statistics
         stats = compute_statistics(data)
-
-        # Define time axis in seconds
-        windows = np.arange(1, num_windows+1)
-        t_seconds = windows * WINDOW_DURATION 
-        t_seconds = np.array(t_seconds, dtype=float)
-
-        x_data = t_seconds
-        y_data = stats['avg_hamming_acc'][:num_windows]
+        
+        # Define axes in seconds
+        if variant == 'SotA':
+            x_data = WINDOW_DURATION
+            y_data = stats['avg_hamming_acc'][-1]  # Single point
+        else:
+            windows = np.arange(1, num_windows+1)
+            t_seconds = windows * WINDOW_DURATION 
+            t_seconds = np.array(t_seconds, dtype=float)
+            x_data = t_seconds
+            y_data = stats['avg_hamming_acc'][:num_windows]
 
         # Plot average hamming accuracy vs time
         label = rf"{variant}"
@@ -98,18 +101,23 @@ if __name__ == "__main__":
         else:
             marker_style = 'd'
 
-        plt.scatter(x_data[:-1], y_data[:-1], marker=marker_style, s=2, label=label)
+        if variant == 'SotA':
+            plt.scatter(x_data, y_data, marker='s', s=50, label=label)
+        else:   
+            plt.scatter(x_data[:-1], y_data[:-1], marker=marker_style, s=2, label=label)
 
-        # Convert coordinates to TikZ format suitable for \addplot coordinates {...}
-        tikz_coords = " ".join([f"({x:.6f},{y:.6f})" for x, y in zip(x_data[:-1], y_data[:-1])])
+        if variant == 'SotA':
+            # Convert coordinates to TikZ format suitable for \addplot coordinates {...}
+            tikz_coords = " ".join(f"({x_data:.4f},{y_data:.4f})")
+        else:
+            tikz_coords = " ".join([f"({x:.4f},{y:.4f})" for x, y in zip(x_data[:-1], y_data[:-1])]) 
+
         filename = os.path.join(TIKZ_COORDS_PATH, f"{variant}_SNR_{args.snr_dB}.txt")
         
         with open(filename, "w") as f:
             f.write(tikz_coords)
 
         print(f"Saved TikZ coordinates to {filename}")
-
-    plt.plot(sota_pamo[0], sota_pamo[1], 'ro', label='SotA')
 
     plt.title(r'SNR = ' + f'{args.snr_dB} dB', fontsize=14)
 
