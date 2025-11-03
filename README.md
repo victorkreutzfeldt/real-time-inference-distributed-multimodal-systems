@@ -2,7 +2,7 @@
 <!-- 
 [![arXiv](https://img.shields.io/badge/arXiv-2506.23118-b31b1b.svg)](https://arxiv.org/abs/2404.14236)-->
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1-red.svg)](https://pytorch.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.9.0-red.svg)](https://pytorch.org/)
 [![CUDA](https://img.shields.io/badge/CUDA-12.8-yellow.svg)](https://developer.nvidia.com/cuda-toolkit)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
