@@ -151,7 +151,7 @@ if __name__ == "__main__":
                 feats_tem_spa_gpa = feats_spa_gpa.mean(axis=1)
     
                 # Save to output files
-                hf_imgs.create_dataset(video_id, data=imgs, dtype=np.uint8, compression="gzip")
+                #hf_imgs.create_dataset(video_id, data=imgs, dtype=np.uint8, compression="gzip")
                 
                 hf_feats.create_dataset(video_id, data=feats, dtype=np.float32, compression="gzip")
                 hf_feats_tem_gpa.create_dataset(video_id, data=feats_tem_gpa, dtype=np.float32, compression="gzip")

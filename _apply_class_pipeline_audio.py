@@ -190,7 +190,7 @@ if __name__ == "__main__":
             # Store average timing for spectrogram extraction
             timing['spectogram'].append(float(np.mean(timing_example)))                
     
-            # Extract uncorrelated spectrogram
+            # Extract uncorrelated spectrograms
             spectrograms_unc40 = []
             spectrograms_unc16 = []
 

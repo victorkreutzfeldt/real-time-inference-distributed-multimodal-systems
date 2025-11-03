@@ -6,7 +6,7 @@ from fractions import Fraction
 from src.vggish_input import waveform_to_examples
 
 # =================== Utility Functions ===================
-def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, packet_duration=Fraction(1, 50), chunk_duration=1.0, device='cpu'):
+def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, packet_duration=Fraction(1, 50), token_duration=1.0, device='cpu'):
     """
     
     """
@@ -15,8 +15,8 @@ def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, pack
     if len(audio_buffer) == 0:
         #breakpoint()
         return {
-            'num_chunks': 0,
-            'num_complete_chunks': 0,
+            'num_tokens': 0,
+            'num_complete_tokens': 0,
             'num_exceeding_pkts': 0,
             'num_non_exceeding_pkts': 0,
             'embs': np.zeros((0, 128), dtype=np.float32)
@@ -35,23 +35,23 @@ def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, pack
     # Waveform duration
     waveform_duration = Fraction(current_len, sample_rate)
 
-    # How many complete chunks we can have
-    num_complete_chunks = int(waveform_duration / Fraction(chunk_duration))
+    # How many complete tokens we can have
+    num_complete_tokens = int(waveform_duration / Fraction(token_duration))
 
-    # How many chunks can we extract
-    num_chunks = np.ceil(waveform_duration / Fraction(chunk_duration))
+    # How many tokens can we extract
+    num_tokens = np.ceil(waveform_duration / Fraction(token_duration))
 
     # Compute number of excedding packets
     num_exceeding_pkts = 0
-    if num_chunks > num_complete_chunks:
-        exceeding_duration = (waveform_duration - num_complete_chunks * Fraction(chunk_duration))
+    if num_tokens > num_complete_tokens:
+        exceeding_duration = (waveform_duration - num_complete_tokens * Fraction(token_duration))
         num_exceeding_pkts = int(exceeding_duration / packet_duration)
 
     # Compute number of non-exceeding packets
     num_non_exceeding_pkts = len(audio_buffer) - num_exceeding_pkts
 
     # Compute expected total length 
-    expected_len = int(num_chunks * chunk_duration * sample_rate) 
+    expected_len = int(num_tokens * token_duration * sample_rate) 
     
     # Padding if necessary
     if current_len < expected_len:
@@ -60,46 +60,18 @@ def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, pack
     elif current_len > expected_len:
         breakpoint() # TODO: handle this case
 
-    # breakpoint()
-    # # Prepare to figure out exceding packets if needed
-    # exceeding_pkts = None
+    # Reshape waveform to (number of tokens, num_samples_per_token)
+    waveform = waveform.reshape(num_tokens, -1)
 
-    # # More information than needed
-    # if exceeding_len > 0:
-
-    #     if mode == 'past':
-    #         # Just truncatate waveform to expected length
-    #         waveform = waveform[:expected_len]
-
-    #     elif mode == 'no-discard':
-    #         # Truncate waveform to expected length
-    #         waveform = waveform[:expected_len]
-
-    #         acc_len = 0
-    #         count = 0
-
-    #         # Iterate from the last packet backward, accumulate payload lengths
-    #         for pkt in reversed(audio_buffer):
-    #             acc_len += len(pkt.payload)
-    #             count += 1
-    #             if acc_len >= exceeding_len:
-    #                 break
-            
-    #         # Select the last `count` packets as exceeding_pkts (not to discard)
-    #         exceeding_pkts = list(audio_buffer)[-count:]  
-
-    # Reshape waveform to (number of chunks, num_samples_per_chunk)
-    waveform = waveform.reshape(num_chunks, -1)
-
-    # Iterate over chunks and extract spectrograms
+    # Iterate over tokens and extract spectrograms
     spectrograms = []
-    for cc in range(num_chunks):
+    for cc in range(num_tokens):
 
-        # Extract current chunk waveform
-        waveform_chunk = waveform[cc]
+        # Extract current token waveform
+        waveform_token = waveform[cc]
 
         # Extract current spectrogram
-        spectrogram = waveform_to_examples(data=waveform_chunk, sample_rate=sample_rate, return_tensor=False)
+        spectrogram = waveform_to_examples(data=waveform_token, sample_rate=sample_rate, return_tensor=False)
 
         # Store current spectrogram
         spectrograms.append(spectrogram)
@@ -117,8 +89,8 @@ def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, pack
 
     # Prepare output
     out = {
-        'num_chunks': num_chunks,
-        'num_complete_chunks': num_complete_chunks,
+        'num_tokens': num_tokens,
+        'num_complete_tokens': num_complete_tokens,
         'num_exceeding_pkts': num_exceeding_pkts,
         'num_non_exceeding_pkts': num_non_exceeding_pkts,
         'embs': embs
@@ -127,7 +99,7 @@ def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, pack
     return out
 
 
-def extract_streaming_video_feats(video_buffer, fallback_feature, sample_rate=16, packet_duration=Fraction(1, 16), chunk_duration=1.0, device='cpu'):
+def extract_streaming_video_feats(video_buffer, fallback_feature, sample_rate=16, packet_duration=Fraction(1, 16), token_duration=1.0, device='cpu'):
     """
 
     """
@@ -136,8 +108,8 @@ def extract_streaming_video_feats(video_buffer, fallback_feature, sample_rate=16
     if len(video_buffer) == 0:
         breakpoint()
         return {
-            'num_chunks': 0,
-            'num_complete_chunks': 0,
+            'num_tokens': 0,
+            'num_complete_tokens': 0,
             'num_exceeding_pkts': 0,
             'num_non_exceeding_pkts': 0,
             'feats': np.zeros((0, fallback_feature.shape[1], fallback_feature.shape[2], fallback_feature.shape[3]), dtype=np.float32)
@@ -153,23 +125,23 @@ def extract_streaming_video_feats(video_buffer, fallback_feature, sample_rate=16
     # Frame duration
     frame_duration = Fraction(current_len, sample_rate)
 
-    # How many complete chunks we can have
-    num_complete_chunks = int(frame_duration / Fraction(chunk_duration))
+    # How many complete tokens we can have
+    num_complete_tokens = int(frame_duration / Fraction(token_duration))
 
-    # How many chunks can we extract
-    num_chunks = np.ceil(frame_duration / Fraction(chunk_duration))
+    # How many tokens can we extract
+    num_tokens = np.ceil(frame_duration / Fraction(token_duration))
 
     # Compute number of excedding packets
     num_exceeding_pkts = 0
-    if num_chunks > num_complete_chunks:
-        exceeding_duration = (frame_duration - num_complete_chunks * Fraction(chunk_duration))
+    if num_tokens > num_complete_tokens:
+        exceeding_duration = (frame_duration - num_complete_tokens * Fraction(token_duration))
         num_exceeding_pkts = int(exceeding_duration / packet_duration)
     
     # Compute number of non-exceeding packets
     num_non_exceeding_pkts = len(video_buffer) - num_exceeding_pkts
 
     # Compute expected total length 
-    expected_len = int(num_chunks * chunk_duration * sample_rate) 
+    expected_len = int(num_tokens * token_duration * sample_rate) 
 
     # Padding if necessary
     if current_len < expected_len:
@@ -182,15 +154,15 @@ def extract_streaming_video_feats(video_buffer, fallback_feature, sample_rate=16
         breakpoint() # TODO: handle this case
 
     
-    # Take the temporal mean as a way of pooling over a chunk
-    feats = feats.reshape(int(num_chunks), -1, feats.shape[1], feats.shape[2], feats.shape[3])
+    # Take the temporal mean as a way of pooling over a token
+    feats = feats.reshape(int(num_tokens), -1, feats.shape[1], feats.shape[2], feats.shape[3])
     feats = feats.mean(axis=1, keepdims=True)
-    feats = feats.squeeze(1)  # (num_chunks, C, H, W)
+    feats = feats.squeeze(1)  # (num_tokens, C, H, W)
     
     # Prepare output
     out = {
-        'num_chunks': num_chunks,
-        'num_complete_chunks': num_complete_chunks,
+        'num_tokens': num_tokens,
+        'num_complete_tokens': num_complete_tokens,
         'num_exceeding_pkts': num_exceeding_pkts,
         'num_non_exceeding_pkts': num_non_exceeding_pkts,
         'feats': feats
@@ -199,14 +171,14 @@ def extract_streaming_video_feats(video_buffer, fallback_feature, sample_rate=16
     return out
 
 
-def extract_fallback_audio_chunk_embs(pipeline, sample_rate=16000, chunk_duration=1.0, device='cpu'):
+def extract_fallback_audio_token_embs(pipeline, sample_rate=16000, token_duration=1.0, device='cpu'):
     """
-    Extract a fallback audio chunk embedding from silent audio.
+    Extract a fallback audio token embedding from silent audio.
 
     """
     
     # Calculate expected length
-    expected_len = int(chunk_duration * sample_rate)
+    expected_len = int(token_duration * sample_rate)
 
     # Generate a silent waveform
     waveform = np.zeros(expected_len)
@@ -217,7 +189,7 @@ def extract_fallback_audio_chunk_embs(pipeline, sample_rate=16000, chunk_duratio
     # Convert to tensor and send to device
     spectrogram = torch.tensor(spectrogram, device=device, dtype=torch.float32)
 
-    # Generate fallback feature from silent audio over a chunk
+    # Generate fallback feature from silent audio over a token
     with torch.no_grad():
         embs = pipeline(spectrogram.unsqueeze(0), return_embs=True)['embs']
 

@@ -10,7 +10,7 @@ from fractions import Fraction
 
 class Packet:
     """
-    
+    Packet class representing a generic media packet (audio or video). 
     """
     def __init__(self,
                 stream_type: str,
@@ -59,6 +59,9 @@ class Packet:
 
 
 class TransmittedPacket(Packet):
+    """
+    TransmittedPacket class representing a media packet with transmission metadata.
+    """
     def __init__(self,
                  stream_type: str,
                  pts: Optional[int],
@@ -132,13 +135,6 @@ def load_transmitted_packets_from_saved_features(
     
         # Load the payload
         payload = payloads[idx]
-
-        # if stream_type == 'audio':
-        #     payload = payload.astype(np.float32).reshape(-1, pkt.nb_channels)
-        
-        # elif stream_type == 'video':
-        #     payload = payload.astype(np.float32)  # (C, H, W)
-        #     #payload = np.transpose(payload, (1, 2, 0))  # → (H, W, C)
         
         # Create transmit packet
         transmit_pkt = TransmittedPacket(
