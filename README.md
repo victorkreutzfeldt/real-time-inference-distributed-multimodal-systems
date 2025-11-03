@@ -1,4 +1,8 @@
 # Real-Time Inference for Distributed Multimodal Systems under Communication Delay Uncertainty
+<!-- 
+[![arXiv](https://img.shields.io/badge/arXiv-2506.23118-b31b1b.svg)](https://arxiv.org/abs/2404.14236)-->
+[![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 This is a research-oriented code package that is primarily intended to allow readers to replicate the results of the paper mentioned below and also encourage and accelerate further research on this topic:
 
@@ -10,13 +14,54 @@ We hope this content helps in your research and contributes to building the prec
 
 If you have any questions or if you have encountered any inconsistencies, please do not hesitate to contact me via victorcroisfelt@gmail.com.
 
-## Abstract
+## 📖 Abstract
 Connected cyber-physical systems perform inference based on real-time inputs from multiple data streams. Uncertain communication delays across data streams challenge the temporal flow of the inference process. State-of-the-art (SotA) non-blocking inference methods rely on a *reference-modality paradigm*, requiring one modality input to be fully received before processing, while depending on costly offline profiling. We propose a novel, *neuro-inspired non-blocking inference paradigm* that primarily employs adaptive temporal windows of integration (TWIs) to dynamically adjust to stochastic delay patterns across heterogeneous streams while relaxing the reference-modality requirement. Our communication-delay-aware framework achieves robust real-time inference with finer-grained control over the accuracy-latency tradeoff. Experiments on the audio-visual event localization (AVEL) task demonstrate superior adaptability to network dynamics compared to SotA approaches.
 
-## Content
+## 🛠️ Installation
+
+1. Clone the repository using SSH:
+```bash
+git clone git@github.com:victorkreutzfeldt/real-time-inference-distributed-multimodal-systems.git
+cd real-time-inference-distributed-multimodal-systems
+```
+
+2. Create and activate the Conda environment using the environment.yml file:
+```bash
+conda env create -f environment.yml
+conda activate realtime
+```
+
+3. Install the AVE dataset from https://github.com/YapengTian/AVE-ECCV18:
+Please, download the dataset, extract and place it under the `data\` folder.
+```bash
+https://drive.google.com/file/d/1FjKwe79e0u96vdjIVwfRQ1V6SoDHe7kK/view
+```
+
+## 🎯 Usage
+
+# Handling the AVE dataset
+
+After ensuring the AVE dataset is correctly downloaded and placed in the appropriate folder, run the following preprocessing scripts in order:
+
+- `data/preprocess.py`: Processes the videos to standardize the auditory stream to a target sampling rate of 16,000 Hz (mono) and the visual stream to 16 FPS with a resolution of 224×224 pixels. Each video clip is trimmed to last 10 seconds. These pre-processed videos will be stored under a new folder `data/AVE_trimmed`.
+
+- `data/generate_annotations.py`: Generates the corresponding annotation files required for training and evaluation.
+
+- `data/pixel_stats.py`: Computes pixel-wise statistics across the dataset for normalization purposes during model training.
+
+# Training baseline model
 
 
-## Citing this Repository and License
+
+# Getting Packets
+
+
+# Simulating Wrapper Operation
+
+
+
+
+## 📝 Citing this Repository and License
 This code is subject to the MIT license. If you use any part of this repository for research, please consider citing our work.
 
 <!--
@@ -35,5 +80,5 @@ This code is subject to the MIT license. If you use any part of this repository 
 ```
 -->
 
-## Acknowledgement
+## 🙏 Acknowledgement
 This work was supported by the Villum Investigator Grant “WATER” from the Velux Foundation, Denmark, and by the SNS JU project 6G-GOALS under the EU's Horizon Europe program under Grant Agreement No. 101139232.
