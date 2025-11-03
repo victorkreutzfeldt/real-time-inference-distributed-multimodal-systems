@@ -32,6 +32,7 @@ conda activate realtime
 ```
 
 3. Install the AVE dataset from https://github.com/YapengTian/AVE-ECCV18:
+
 Please, download the dataset, extract and place it under the `data\` folder.
 ```bash
 https://drive.google.com/file/d/1FjKwe79e0u96vdjIVwfRQ1V6SoDHe7kK/view
@@ -39,7 +40,7 @@ https://drive.google.com/file/d/1FjKwe79e0u96vdjIVwfRQ1V6SoDHe7kK/view
 
 ## 🎯 Usage
 
-# Handling the AVE dataset
+### Handling the AVE dataset
 
 After ensuring the AVE dataset is correctly downloaded and placed in the appropriate folder, run the following preprocessing scripts in order:
 
@@ -49,14 +50,14 @@ After ensuring the AVE dataset is correctly downloaded and placed in the appropr
 
 - `data/pixel_stats.py`: Computes pixel-wise statistics across the dataset for normalization purposes during model training.
 
-# Training baseline model
+### Training baseline model
 
 
 
-# Getting Packets
+### Getting Packets
 
 
-# Simulating Wrapper Operation
+### Simulating Wrapper Operation
 
 
 
