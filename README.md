@@ -2,9 +2,9 @@
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.9.0-red.svg)](https://pytorch.org/)
 [![CUDA](https://img.shields.io/badge/CUDA-12.8-yellow.svg)](https://developer.nvidia.com/cuda-toolkit)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 <!-- 
 [![arXiv](https://img.shields.io/badge/arXiv-2506.23118-b31b1b.svg)](https://arxiv.org/abs/2404.14236)-->
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 This is a research-oriented code package that is primarily intended to allow readers to replicate the results of the paper mentioned below and also encourage and accelerate further research on this topic:
 
@@ -27,10 +27,12 @@ git clone https://github.com/victorkreutzfeldt/real-time-inference-distributed-m
 cd real-time-inference-distributed-multimodal-systems
 ```
 
-2. Create and activate the Conda environment using the environment.yml file:
+2. Create and activate a pip environment using the requirements.txt file:
 ```bash
-conda env create -f environment.yml
-conda activate realtime
+python3 -m venv realtime
+source realtime/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
 3. Install the AVE dataset from https://github.com/YapengTian/AVE-ECCV18:
