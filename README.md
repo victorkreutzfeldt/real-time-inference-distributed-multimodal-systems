@@ -78,12 +78,12 @@ Generates the corresponding annotation files required for training and evaluatio
 With the dataset prepared (`data/AVE_trimmed`) and annotations generated, you can train the baseline model for the fully-supervised Audio-Visual Event Localization (AVEL) task, based on the implementation from [Yapeng Tian's AVE-ECCV18 repository](https://github.com/YapengTian/AVE-ECCV18). Run the following in order:
 
 ```bash
-python _apply_class_pipeline_audio.py`
+python _apply_class_pipeline_audio.py
 ```
 Applies the auditory pipeline to extract audio features and embeddings using the VGGish model. This implementation builds upon the [torchvggish project](https://github.com/harritaylor/torchvggish/).
 
 ```bash
-python _apply_class_pipeline_video.py`
+python _apply_class_pipeline_video.py
 ```
 Applies the visual pipeline to extract features using the VGG-19 model. 
 
