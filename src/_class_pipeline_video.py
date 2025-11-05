@@ -1,3 +1,5 @@
+# src/_class_pipeline_video.py
+
 import numpy as np
 
 import torch
@@ -8,7 +10,7 @@ import torchvision.models as models
 from torchvision import transforms
 from torchvision.models import VGG19_Weights
 
-# ======= Video =======
+
 class VGGVideo(nn.Module):
     """
     Load VGG19 model and extract features from 'block5_pool'.

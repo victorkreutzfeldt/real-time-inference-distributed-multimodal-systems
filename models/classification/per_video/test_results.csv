@@ -1,2 +1,2 @@
-base_name,modality,style,optimizer,lr,weight_decay,test_loss,test_hacc,test_sacc,timestamp,num_params,num_trainable,pos_weight,standardization
-shallow_classifier_multimodal_features_base,multimodal,base,adamw,0.001,0.0001,0.083645,0.671964,0.658259,2025-11-03 15:05:14,7915933,7915933,False,none
+base_name,modality,style,optimizer,lr,weight_decay,test_loss,test_hacc,test_sacc,timestamp,num_params,num_trainable,pos_weight
+shallow_classifier_multimodal_features_base,multimodal,base,adamw,0.001,0.0001,0.083645,0.671964,0.658259,2025-11-05 14:08:10,7915933,7915933,False

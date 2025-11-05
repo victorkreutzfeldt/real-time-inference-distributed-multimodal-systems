@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*- 
+
 import os
 import gzip
 import pickle
@@ -6,6 +9,7 @@ import matplotlib.pyplot as plt
 plt.rcParams['text.usetex'] = True
 
 import argparse
+
 
 parser = argparse.ArgumentParser(
     description="Plot for a given SNR in dB the comparison between the baseline and neuro-inspired wrappers."

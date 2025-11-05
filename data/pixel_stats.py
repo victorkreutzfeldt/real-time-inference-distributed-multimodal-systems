@@ -1,3 +1,7 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File: data/pixel_stats.py
+
 import torch
 from torchvision import transforms
 
@@ -41,7 +45,7 @@ for video_id in tqdm(video_ids, desc="Going through training videos"):
         
         for ii in range(16):
             img = imgs[ii]
-            tensor = transform(img)  # shape: [3,H,W]
+            tensor = transform(img)  # shape: [3, H, W]
             n_images += 1
             total_pixels += tensor.shape[1] * tensor.shape[1]
             total_sum += tensor.sum(dim=(1, 2))

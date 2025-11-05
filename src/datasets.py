@@ -1,3 +1,5 @@
+# src/datasets.py
+
 import ast
 
 import h5py
@@ -5,11 +7,6 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
-
-def one_hot_encode(labels, num_classes):
-    vec = np.zeros(num_classes, dtype=np.float32)
-    vec[labels] = 1.0
-    return vec
 
 
 class PerVideoMultimodalDataset(Dataset):

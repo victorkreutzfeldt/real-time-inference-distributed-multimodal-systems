@@ -1,3 +1,5 @@
+# src/utils_wrapper.py
+
 import torch
 import numpy as np
 
@@ -5,7 +7,7 @@ from fractions import Fraction
 
 from src.vggish_input import waveform_to_examples
 
-# =================== Utility Functions ===================
+
 def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, packet_duration=Fraction(1, 50), token_duration=1.0, device='cpu'):
     """
     
@@ -13,7 +15,6 @@ def extract_streaming_audio_embs(audio_buffer, pipeline, sample_rate=16000, pack
 
     # Check if audio_buffer is empty
     if len(audio_buffer) == 0:
-        #breakpoint()
         return {
             'num_tokens': 0,
             'num_complete_tokens': 0,
@@ -104,7 +105,7 @@ def extract_streaming_video_feats(video_buffer, fallback_feature, sample_rate=16
 
     """
 
-    # TODO: check if video_buffer is empty
+    # Check if video_buffer is empty
     if len(video_buffer) == 0:
         breakpoint()
         return {
@@ -197,10 +198,3 @@ def extract_fallback_audio_token_embs(pipeline, sample_rate=16000, token_duratio
     embs = embs.cpu().numpy().astype(np.float32)
 
     return embs
-
-
-def has_order_violation(arr):
-    for i in range(len(arr) - 1):
-        if arr[i] > arr[i + 1]:
-            return True  # Order violation found
-    return False  # No violations, array is sorted

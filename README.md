@@ -27,7 +27,7 @@ real-time-inference-distributed-multimodal-systems/
 ├── models/                     # Directory for saving trained models
 ├── src/                        # Source code directory
 ├── _apply_class_pipeline_audio.py   # Applies audio pipeline over video observations to extract auditory features and embeddings
-├── _apply_class_pipeline_video.py   # Applies video pipeline over video observations to extract visual features and embeddings
+├── _apply_class_pipeline_video.py   # Applies video pipeline over video observations to extract visual features
 ├── _train.py                  # Trains the baseline model for the AVEL task using extracted auditory embeddings and visual features
 ├── packetization.py           # Packetizes each video observation into separate auditory and visual streams
 ├── plotting_per_snr.py        # Plots the performance curves reported in the paper for each SNR value
@@ -52,7 +52,7 @@ pip install -r requirements.txt
 
 3. Install the AVE dataset from https://github.com/YapengTian/AVE-ECCV18:
 
-Please, download the dataset, extract and place it under the `data\` folder, having the video observations saved under `data\AVE`
+Please, download the dataset, extract and place it under the `data/` folder, having the video observations saved under `data/AVE`
 ```bash
 https://drive.google.com/file/d/1FjKwe79e0u96vdjIVwfRQ1V6SoDHe7kK/view
 ```
@@ -63,17 +63,29 @@ https://drive.google.com/file/d/1FjKwe79e0u96vdjIVwfRQ1V6SoDHe7kK/view
 
 After ensuring the AVE dataset is correctly downloaded and placed in the appropriate folder, run the following preprocessing scripts:
 
-- `data/preprocess.py`: Processes the videos to standardize the auditory stream to a target sampling rate of 16,000 Hz (mono) and the visual stream to 16 FPS with a resolution of 224×224 pixels. Each video clip is trimmed to last 10 seconds. These pre-processed videos will be stored under a new folder `data/AVE_trimmed` with `.avi` format.
+```bash
+python data/preprocess.py
+```
+Processes the videos to standardize the auditory stream to a target sampling rate of 16,000 Hz (mono) and the visual stream to 16 FPS with a resolution of 224×224 pixels. Each video clip is trimmed to last 10 seconds. These pre-processed videos will be stored under a new folder `data/AVE_trimmed` with `.avi` format.
 
-- `data/generate_annotations.py`: Generates the corresponding annotation files required for training and evaluation.
+```bash
+python data/preprocess.py
+```
+Generates the corresponding annotation files required for training and evaluation.
 
 ### Training Baseline Model
 
-With the dataset prepared (`data/AVE_trimmed`) and annotations generated, you can train the baseline model for the fully-supervised Audio-Visual Event Localization (AVEL) task, based on the implementation from [Yapeng Tian's AVE-ECCV18 repository](https://github.com/YapengTian/AVE-ECCV18). Follow these steps:
+With the dataset prepared (`data/AVE_trimmed`) and annotations generated, you can train the baseline model for the fully-supervised Audio-Visual Event Localization (AVEL) task, based on the implementation from [Yapeng Tian's AVE-ECCV18 repository](https://github.com/YapengTian/AVE-ECCV18). Run the following in order:
 
-- **`_apply_class_pipeline_audio.py`**: Applies the auditory pipeline to extract audio features and embeddings using the VGGish model. This implementation builds upon the [torchvggish project](https://github.com/harritaylor/torchvggish/).
+```bash
+python _apply_class_pipeline_audio.py`
+```
+Applies the auditory pipeline to extract audio features and embeddings using the VGGish model. This implementation builds upon the [torchvggish project](https://github.com/harritaylor/torchvggish/).
 
-- **`_apply_class_pipeline_visual.py`**: Applies the visual pipeline to extract features using the VGG-19 model. 
+```bash
+python _apply_class_pipeline_video.py`
+```
+Applies the visual pipeline to extract features using the VGG-19 model. 
 
 Raw data is stored under the folder `data/raw`, while extracted features and embeddings are saved in `data/classification`.
 
@@ -84,18 +96,18 @@ For audio processing, we use correlated spectrograms over mono audio with the fo
 
 This configuration produces **96 spectrogram frames per 1-second token**. For inference, **128-dimensional embeddings** are generated per token after passing through the VGGish pipeline.
 
-For video processing, each 1-second token consists of **16 frames**. Frames are processed through the **VGG-19** network using pixel-stats extracted by running `data/pixel-stats` over the raw videos, and features are pooled as follows:
+For video processing, each 1-second token consists of **16 frames**. Frames are processed through the **VGG-19** network using normalization based on pixel-stats extracted by running `data/pixel-stats` over the raw videos, and visual features are pooled as follows:
 
 - **Temporal pooling** averages features across the 16 frames of the token.  
 - **Spatial pooling** averages across the 7×7 spatial dimensions of the VGG-19 output (512×7×7), resulting in compact feature representations.
 
-Finally, having the features and embeddings in place, train a model to tackle the AVEL task by running:
+Finally, having the auditory embeddings and visual features in place, train a model to tackle the AVEL task by running:
 
 - **`_train.py`**: Trains a specified baseline model on the AVEL task using auditory embeddings and visual features generated by the above pipelines.
 
 To obtain the baseline model weights used in the paper, saved at `models/`, run:
 ```bash
-python train.py --modality multimodal --style base --train
+python _train.py --modality multimodal --style base --train
 ```
 The `.pth` file for the baseline model is provided in the repository.
 
@@ -105,13 +117,12 @@ To simulate streaming transmission of video observations from two different sour
 ```bash
 python packetization.py
 ```
-This creates three files per video and per modality: `video_id_payloads.h5`, `video_id_packets.`
 
 ### Simulating Wrapper Operation
 
 To reproduce the curves reported in the paper, run the `wrapper.py` script. This script loads the baseline model, utilizes the packetized data, and operates the auditory and visual pipelines in streaming mode. The script simulates the neuro-inspired wrapper based on the TWI optimization variants described in the paper. When executing the wrapper, specify:
 
-- **`variant`**: Choose the TWI optimization variant, either **PaMo** or **ToMo**.
+- **`variant`**: Choose the TWI optimization variant, either **SotA** (to simulate the baseline), **PaMo** or **ToMo**.
 - **`snr_dB`**: Define the signal-to-noise ratio (SNR) in decibels, with valid options being **-5**, **1.1888**, and **2**, as reported in the paper.
 
 Example command:
@@ -119,7 +130,7 @@ Example command:
 python wrapper.py --variant PaMo --snr_dB -5
 ```
 
-Each run produces a `.gz` file containing the curve data that depicts inference performance evolution over time. After collecting multiple `.gz` files for different variants and SNR values, use the `plot_per_snr.py` script to generate the curves reported in the paper. Running, for example:
+Each run produces a `.gz` file containing the curve data that depicts inference performance evolution over time. After collecting the `.gz` files for the three different variants per SNR, use the `plot_per_snr.py` script to generate the curves reported in the paper. Running, for example:
 ```bash
 python wrapper.py --snr_dB -5
 ```

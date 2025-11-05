@@ -1,11 +1,10 @@
-import math
-import torch
+# src/communication.py
+
 import numpy as np
 
 from typing import List
 
 from src.packets import TransmittedPacket
-from fractions import Fraction
 
 
 def rate(epsilon, bandwidth, snr_db):
@@ -24,7 +23,7 @@ def rate(epsilon, bandwidth, snr_db):
     val = 1 - snr_linear * np.log(1 - epsilon)
     val = np.maximum(val, 1e-12)  # prevent log domain error
 
-    return bandwidth * np.log2(val)
+    return float((bandwidth * np.log2(val)).item())
 
 
 def simulate_transmission(packets: List[TransmittedPacket], bandwidth_bps, outage_proba):

@@ -1,3 +1,5 @@
+# src/_class_pipeline_audio.py
+
 import numpy as np
 
 import torch
@@ -7,7 +9,7 @@ from torch import hub
 from . import vggish_params
 from . import vggish_input
 
-# ======= AUDIO =======
+
 class VGGAudio(nn.Module):
     """
     

@@ -17,7 +17,7 @@ from src.datasets import PerVideoMultimodalDatasetLabels
 from src._class_pipeline_audio import AudioPipeline
 from src._class_pipeline_video import VideoPipeline
 
-from src.packets import load_transmitted_packets_from_saved_features
+from src.packets import load_packets
 from src.models import PerVideoBiLSTMMultimodalClassifier
 
 from src.utils import hamming_accuracy_from_label_lists, subset_accuracy_from_label_lists
@@ -115,8 +115,9 @@ if args.variant == 'SotA':
 else:
     STOP_TIME = STOP_TIME + WINDOW_DURATION
 
-# Round WINDOW_DURATION to 4 decimal places
-WINDOW_DURATION = np.ceil(WINDOW_DURATION * 10000) / 10000
+# Round to 4 decimal places
+STOP_TIME = float((np.ceil(STOP_TIME * 10000) / 10000).item())
+WINDOW_DURATION = float((np.ceil(WINDOW_DURATION * 10000) / 10000).item())
 
 # Inference parameters
 MODEL_CHECKPOINT = 'models/classification/per_video/shallow_classifier_multimodal_features_base.pth'
@@ -192,7 +193,7 @@ if __name__ == "__main__":
     }
 
     # Go through all test videos
-    for idx, video_id in tqdm(enumerate(test_videos), total=len(test_videos), desc="Wrapper: {args.variant}", ascii=True):
+    for idx, video_id in tqdm(enumerate(test_videos), total=len(test_videos), desc=f"Wrapper: {args.variant}", ascii=True):
 
         # Extract labels from the dataset
         data = test_ds[idx]
@@ -203,18 +204,16 @@ if __name__ == "__main__":
         video_base = f"data/packets/video/{video_id}"
 
         # Load TO-BE transmitted packets
-        transmitted_audio = load_transmitted_packets_from_saved_features(
-            packets_path=f"{audio_base}_packets.pkl.gz",
-            payload_path=f"{audio_base}_payloads.h5",
-            pts2idx_path=f"{audio_base}_pts2idx.pkl.gz",
-            stream_type='audio'
+        transmitted_audio = load_packets(
+            stream_type='audio',
+            packets_path=f"{audio_base}.pkl.gz"
+
         )
 
-        transmitted_video = load_transmitted_packets_from_saved_features(
-            packets_path=f"{video_base}_packets.pkl.gz",
-            payload_path=f"{video_base}_payloads.h5",
-            pts2idx_path=f"{video_base}_pts2idx.pkl.gz",
-            stream_type='video'
+        transmitted_video = load_packets(
+            stream_type='video',
+            packets_path=f"{video_base}.pkl.gz"
+
         )
 
         # Simulate transmission

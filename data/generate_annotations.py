@@ -1,3 +1,7 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File: data/generate_annotations.py
+
 import pandas as pd
 import math
 import os
@@ -9,7 +13,7 @@ print("Generating dataset annotation file!")
 print("="*10)
 print("\n")
 
-# = Config =
+# ---- Config ----
 ANNOTATION_FILE = 'data/Annotations.txt'
 TRAIN_FILE = 'data/trainSet.txt'
 VAL_FILE = 'data/valSet.txt'
@@ -18,7 +22,7 @@ TOKEN_DURATION = 1.0  # seconds per token
 NUM_TOTAL_TOKENS = 10  # total tokens per video, e.g. 10 seconds duration
 OUTPUT_CSV = 'data/annotations.csv'
 
-# = Helper to load split file =
+# ---- Helper to load split file ----
 def load_split_file(file_path):
     split = set()
     with open(file_path, 'r') as f:
@@ -43,7 +47,7 @@ def get_split(video_id):
     else:
         return 'unknown'
 
-# = Parse annotation file to collect labels per token =
+# ---- Parse annotation file to collect labels per token ----
 token_labels = defaultdict(lambda: defaultdict(set))  # video_id -> token_index -> set(labels)
 label_counter = Counter()
 
@@ -115,7 +119,7 @@ df = df.sort_values(by=['video_id', 'token_idx']).reset_index(drop=True)
 df.to_csv(OUTPUT_CSV, index=False)
 print(f"Saved annotation CSV to {OUTPUT_CSV}")
 
-# === Save mappings to JSON ===
+# ---- Save mappings to JSON ----
 MAPPINGS_DIR = os.path.dirname(OUTPUT_CSV) or "."
 LABEL2IDX_PATH = os.path.join(MAPPINGS_DIR, "label_to_index.json")
 IDX2LABEL_PATH = os.path.join(MAPPINGS_DIR, "index_to_label.json")
@@ -131,7 +135,7 @@ with open(IDX2LABEL_PATH, "w") as f:
 print(f"Saved label_to_index to {LABEL2IDX_PATH}")
 print(f"Saved index_to_label to {IDX2LABEL_PATH}")
 
-# = Reporting: Video counts and label counts per split =
+# ---- Reporting: Video counts and label counts per split ----
 print("\n=== Dataset Summary ===\n")
 
 # Number of videos per split

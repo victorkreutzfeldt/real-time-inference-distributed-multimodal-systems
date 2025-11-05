@@ -1,3 +1,5 @@
+# src/models.py
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -26,7 +28,7 @@ class _ResidualBlock(nn.Module):
         h = self.drop(self.act(self.ln2(self.fc2(h))))
         return x + h
 
-# ========================== Models ==========================
+
 class PerVideoBiLSTMAudioClassifier(nn.Module):
     def __init__(self, input_dim=128, num_classes=29, style="base", hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
