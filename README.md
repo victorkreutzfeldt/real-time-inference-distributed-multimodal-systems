@@ -69,7 +69,7 @@ python data/preprocess.py
 Processes the videos to standardize the auditory stream to a target sampling rate of 16,000 Hz (mono) and the visual stream to 16 FPS with a resolution of 224×224 pixels. Each video clip is trimmed to last 10 seconds. These pre-processed videos will be stored under a new folder `data/AVE_trimmed` with `.avi` format.
 
 ```bash
-python data/preprocess.py
+python data/generate_annotations.py
 ```
 Generates the corresponding annotation files required for training and evaluation.
 
