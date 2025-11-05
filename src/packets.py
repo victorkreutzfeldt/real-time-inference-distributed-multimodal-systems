@@ -8,6 +8,7 @@ import numpy as np
 
 from fractions import Fraction
 
+
 class Packet:
     """
     Packet class representing a generic media packet (audio or video). 

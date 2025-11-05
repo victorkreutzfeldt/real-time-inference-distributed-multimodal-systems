@@ -4,10 +4,6 @@ import torch
 import torch.nn as nn
 from torch import hub
 
-import torchvision.models as models
-from torchvision import transforms
-from torchvision.models import VGG19_Weights
-
 from . import vggish_params
 from . import vggish_input
 

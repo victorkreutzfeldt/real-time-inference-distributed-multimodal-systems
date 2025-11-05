@@ -8,7 +8,6 @@ import torchvision.models as models
 from torchvision import transforms
 from torchvision.models import VGG19_Weights
 
-
 # ======= Video =======
 class VGGVideo(nn.Module):
     """
@@ -65,6 +64,7 @@ class PostprocessorVideo(nn.Module):
         """Constructs a postprocessor."""
         super(PostprocessorVideo, self).__init__()
         pass # TODO
+
     #     # Create empty matrix, for user's state_dict to load
     #     self.pca_eigen_vectors = torch.empty(
     #         (vggish_params.EMBEDDING_SIZE, vggish_params.EMBEDDING_SIZE,),

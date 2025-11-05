@@ -11,17 +11,17 @@ from tqdm import tqdm
 
 from fractions import Fraction
 
-from src.communication import simulate_transmission
+from src.communication import rate, simulate_transmission
 from src.datasets import PerVideoMultimodalDatasetLabels
 
 from src._class_pipeline_audio import AudioPipeline
 from src._class_pipeline_video import VideoPipeline
 
 from src.packets import load_transmitted_packets_from_saved_features
-from src.per_video_models import PerVideoBiLSTMMultimodalClassifier
+from src.models import PerVideoBiLSTMMultimodalClassifier
 
 from src.utils import hamming_accuracy_from_label_lists, subset_accuracy_from_label_lists
-from src.utils_asynch import extract_fallback_audio_token_embs, extract_streaming_audio_embs, extract_streaming_video_feats
+from src.utils_wrapper import extract_fallback_audio_token_embs, extract_streaming_audio_embs, extract_streaming_video_feats
 
 import argparse
 
@@ -50,21 +50,21 @@ args = parser.parse_args()
 # ================ Config =====================
 ANNOTATIONS_CSV = 'data/annotations.csv'
 
-# Data parameters
-VIDEO_DURATION = 10.0  # in seconds
+# Data-related inference parameters
+VIDEO_DURATION = 10.0  # seconds
 NUM_TOKENS = 10
-TOKEN_DURATION = 1.0
+TOKEN_DURATION = 1.0 # seconds
 NUM_CLASSES = 29
+
+# Source coding parameters
 AUDIO_SAMPLING_RATE = 16_000
 VIDEO_FPS = 16
+AUDIO_PACKET_SIZE = 5_120 # bits
+VIDEO_PACKET_SIZE = 1_204_224 # bits
+AUDIO_PACKET_DURATION = Fraction(1, 50)
+VIDEO_PACKET_DURATION = Fraction(1, 16)
 
-# # Network parameters
-
-def rate(epsilon, bandwidth, snr_db):
-    snr_linear = 10**(snr_db/10)
-    val = 1 - snr_linear * np.log(1 - epsilon)
-    val = np.maximum(val, 1e-12)  # prevent log domain error
-    return bandwidth * np.log2(val)
+## Network parameters
 
 # Bandwidth in Hz
 AUDIO_BANDWIDTH = 1.08e6
@@ -77,17 +77,14 @@ outage_proba = 0.5
 AUDIO_SNR_DB = float(args.snr_dB)
 VIDEO_SNR_DB = 0 
 
+# Compute achievable bitrates based on the channel model
 BANDWIDTH_BPS_AUDIO = rate(outage_proba, AUDIO_BANDWIDTH, AUDIO_SNR_DB)
 BANDWIDTH_BPS_VIDEO = rate(outage_proba, VIDEO_BANDWIDTH, VIDEO_SNR_DB)
 
-# Transmission parameters
-AUDIO_PACKET_SIZE = 5_120 # bits
-VIDEO_PACKET_SIZE = 1_204_224 # bits
-
-AUDIO_PACKET_DURATION = Fraction(1, 50)
-VIDEO_PACKET_DURATION = Fraction(1, 16)
-
-# Define Wrapper's TWI
+# Define Wrapper's TWI:
+# All the values are in seconds and were obtained by analyzing the distribution of the 
+# minimum of the total transmission time per modality.
+# These values are specific to the chosen SNR and variant.
 avg_total_tx_time_video = 5.0724
 if args.snr_dB == '-5':
     avg_total_tx_time_audio = 16.5803
@@ -160,7 +157,7 @@ if __name__ == "__main__":
     fallback_audio_token_embs = extract_fallback_audio_token_embs(
         pipeline=pipeline_audio, sample_rate=AUDIO_SAMPLING_RATE, token_duration=TOKEN_DURATION, device=DEVICE)
     
-    # Get feature for a dark image
+    # Fallback feature for missing video sample (features)
     dark_image = np.zeros((1, 224, 224, 3), dtype=np.uint8)
     with torch.no_grad():
         out = pipeline_video(dark_image, return_feats=True) 
@@ -169,8 +166,8 @@ if __name__ == "__main__":
 
     # Get inference model
     model = PerVideoBiLSTMMultimodalClassifier().to(DEVICE)
-    model.eval()
     model.load_state_dict(torch.load(MODEL_CHECKPOINT, map_location=DEVICE))
+    model.eval()
 
     # Prepare to save results    
     results = {
@@ -195,7 +192,7 @@ if __name__ == "__main__":
     }
 
     # Go through all test videos
-    for idx, video_id in tqdm(enumerate(test_videos), total=len(test_videos), desc="Aligned Async Inference", ascii=True):
+    for idx, video_id in tqdm(enumerate(test_videos), total=len(test_videos), desc="Wrapper: {args.variant}", ascii=True):
 
         # Extract labels from the dataset
         data = test_ds[idx]
@@ -222,25 +219,17 @@ if __name__ == "__main__":
 
         # Simulate transmission
         received_audio = simulate_transmission(transmitted_audio, BANDWIDTH_BPS_AUDIO, outage_proba)
-        received_video = simulate_transmission(transmitted_video, BANDWIDTH_BPS_VIDEO, outage_proba, fallback_video_feature=fallback_video_feat)
-        
-        # Get all PTS times
-        pts_times_audio = [float(pkt.pts_time) for pkt in received_audio]
-        pts_times_video = [float(pkt.pts_time) for pkt in received_video]
-
-        # Get all arrival times
-        arrival_times_audio = [float(pkt.arrival_time) for pkt in received_audio if pkt.arrival_time is not None]
-        arrival_times_video = [float(pkt.arrival_time) for pkt in received_video if pkt.arrival_time is not None]
+        received_video = simulate_transmission(transmitted_video, BANDWIDTH_BPS_VIDEO, outage_proba)
 
         # Send received audio and video to buffer
         received_audio_buffer = deque(received_audio)
         received_video_buffer = deque(received_video)
 
-        # Create audio and video buffers
+        # Create audio and video buffers (Packet-level buffers per modality)
         audio_buffer = deque()
         video_buffer = deque()
         
-        # Create audio and video buffers per token
+        # Create audio and video buffers per token (Token-level buffers per modality)
         audio_tokens_buffer = deque()
         video_tokens_buffer = deque()
 
@@ -261,7 +250,7 @@ if __name__ == "__main__":
         while True:
 
 
-            ########## Window Buffers ##########  
+            ########## Packet-Level Buffers ##########  
 
 
             # Get start and end times of this window
@@ -407,7 +396,6 @@ if __name__ == "__main__":
             # Convert to tensor, send to device, and unsequeeze to enable inference
             audio_tensor = torch.tensor(curr_audio, device=DEVICE, dtype=torch.float32).unsqueeze(0)
             video_tensor = torch.tensor(curr_video, device=DEVICE, dtype=torch.float32).unsqueeze(0)
-            # TODO: check labels 
             
             # Perform inference
             with torch.no_grad():
@@ -437,10 +425,10 @@ if __name__ == "__main__":
 
             ########## Next Window ########## 
 
-            # Check stopping condition
+            # Stopping condition #1
             if t_end >= STOP_TIME:
                 break 
-
+            
             # Keep exceeding packets in the buffer
             if PROCESS_AUDIO and out_audio['num_exceeding_pkts'] > 0:
                 audio_buffer = deque(list(audio_buffer)[-out_audio['num_exceeding_pkts']:])
@@ -466,7 +454,7 @@ if __name__ == "__main__":
             # Increment window counter
             ww += 1
 
-            # Stopping condition
+            # Stopping condition #2
             if last_round is not None and ww > last_round:
                 break
 

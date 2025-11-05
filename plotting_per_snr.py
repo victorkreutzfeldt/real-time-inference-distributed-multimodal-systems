@@ -5,13 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.rcParams['text.usetex'] = True
 
-# Save figure path and TikZ coordinates folder
-SAVE_FIG = 'data/results/figs/'
-TIKZ_COORDS_PATH = 'data/results/tikz/'
-
-os.makedirs(SAVE_FIG, exist_ok=True)
-os.makedirs(TIKZ_COORDS_PATH, exist_ok=True)
-
 import argparse
 
 parser = argparse.ArgumentParser(
@@ -27,6 +20,7 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
+
 
 def compute_statistics(data):
     """
@@ -55,6 +49,13 @@ def compute_statistics(data):
 
 
 if __name__ == "__main__":
+
+    # Save figure path and TikZ coordinates folder
+    SAVE_FIG = 'data/results/figs/'
+    TIKZ_COORDS_PATH = 'data/results/tikz/'
+
+    os.makedirs(SAVE_FIG, exist_ok=True)
+    os.makedirs(TIKZ_COORDS_PATH, exist_ok=True)
 
     # Variants
     variants = ['SotA', 'PaMo', 'ToMo'] 
@@ -106,14 +107,13 @@ if __name__ == "__main__":
         else:   
             plt.scatter(x_data[:-1], y_data[:-1], marker=marker_style, s=2, label=label)
 
+        # Convert coordinates to TikZ format suitable for \addplot coordinates {...}
         if variant == 'SotA':
-            # Convert coordinates to TikZ format suitable for \addplot coordinates {...}
-            tikz_coords = " ".join(f"({x_data:.4f},{y_data:.4f})")
+            tikz_coords = f"({x_data:.4f},{y_data:.4f})"
         else:
             tikz_coords = " ".join([f"({x:.4f},{y:.4f})" for x, y in zip(x_data[:-1], y_data[:-1])]) 
-
-        filename = os.path.join(TIKZ_COORDS_PATH, f"{variant}_SNR_{args.snr_dB}.txt")
         
+        filename = os.path.join(TIKZ_COORDS_PATH, f"{variant}_SNR_{args.snr_dB}.txt")
         with open(filename, "w") as f:
             f.write(tikz_coords)
 

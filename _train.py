@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from src.datasets import PerVideoMultimodalDataset
 
-from src.per_video_models import (
+from src.models import (
     PerVideoBiLSTMAudioClassifier,
     PerVideoBiLSTMVideoClassifier,
     PerVideoBiLSTMMultimodalClassifier,
