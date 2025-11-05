@@ -105,6 +105,7 @@ To simulate streaming transmission of video observations from two different sour
 ```bash
 python packetization.py
 ```
+This creates three files per video and per modality: `video_id_payloads.h5`, `video_id_packets.`
 
 ### Simulating Wrapper Operation
 
