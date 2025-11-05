@@ -132,7 +132,7 @@ python wrapper.py --variant PaMo --snr_dB -5
 
 Each run produces a `.gz` file in `data/results/` containing the curve data that depicts inference performance evolution over time. After collecting the `.gz` files for the three different variants per SNR, use the `plot_per_snr.py` script to generate the curves reported in the paper. Running, for example:
 ```bash
-python wrapper.py --snr_dB -5
+python plot_per_snr.py --snr_dB -5
 ```
 will generate the `.txt` files suitable for TikZ plotting and a sketch of the figure in `data/results/figs`.
 
