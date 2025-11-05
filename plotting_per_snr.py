@@ -51,8 +51,8 @@ def compute_statistics(data):
     
     return stats
 
-
-if __name__ == "__main__":
+# ---- Main -----
+def main():
 
     # Save figure path and TikZ coordinates folder
     SAVE_FIG = 'data/results/figs/'
@@ -134,3 +134,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     
     plt.savefig(SAVE_FIG + f'accuracy_{variant}_SNR_{args.snr_dB}.png', dpi=300)
+
+
+if __name__ == "__main__":
+    main()
