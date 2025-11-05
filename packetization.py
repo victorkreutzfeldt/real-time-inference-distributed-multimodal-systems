@@ -19,8 +19,7 @@ TARGET_SAMPLING_RATE = 16000
 TARGET_VIDEO_DURATION = 10.0
 IMAGE_RESOLUTION = (224, 224)
 
-TARGET_NUM_VIDEO_PACKETS = int(TARGET_FPS * TARGET_VIDEO_DURATION)  # 160 frames
-
+TARGET_NUM_VIDEO_PACKETS = int(TARGET_FPS * TARGET_VIDEO_DURATION)  # 160 visual samples
 AUDIO_WINDOW_SIZE = 320 # samples per audio packet
 TARGET_NUM_AUDIO_PACKETS = int(TARGET_SAMPLING_RATE * TARGET_VIDEO_DURATION / AUDIO_WINDOW_SIZE)
 
@@ -31,6 +30,7 @@ VIDEO_FEATURES_PATH = 'data/classification/features/video.h5'
 OUTPUT_PATH = 'data/packets'
 os.makedirs(os.path.join(OUTPUT_PATH, 'audio'), exist_ok=True)
 os.makedirs(os.path.join(OUTPUT_PATH, 'video'), exist_ok=True)
+
 
 def extract_video_frames_ffmpeg(input_path, tmp_dir):
     """Extract video frames at TARGET_FPS and resize using FFmpeg to tmp_dir as PNG files."""
