@@ -1,0 +1,195 @@
+[ INFO : 2025-11-11 16:25:00,438 ] - = Arguments =
+[ INFO : 2025-11-11 16:25:00,438 ] - modality: multimodal
+[ INFO : 2025-11-11 16:25:00,438 ] - AGVattn: False
+[ INFO : 2025-11-11 16:25:00,438 ] - epochs: 100
+[ INFO : 2025-11-11 16:25:00,438 ] - batch_size: 64
+[ INFO : 2025-11-11 16:25:00,438 ] - lr: 0.001
+[ INFO : 2025-11-11 16:25:00,438 ] - optimizer: adamw
+[ INFO : 2025-11-11 16:25:00,438 ] - weight_decay: 0.0001
+[ INFO : 2025-11-11 16:25:00,438 ] - momentum: 0.9
+[ INFO : 2025-11-11 16:25:00,438 ] - adam_beta1: 0.9
+[ INFO : 2025-11-11 16:25:00,438 ] - adam_beta2: 0.999
+[ INFO : 2025-11-11 16:25:00,438 ] - patience: 5
+[ INFO : 2025-11-11 16:25:00,438 ] - pos_weight: False
+[ INFO : 2025-11-11 16:25:00,438 ] - train: True
+[ INFO : 2025-11-11 16:25:00,438 ] - seed: 42
+[ INFO : 2025-11-11 16:25:00,438 ] - num_workers: 8
+[ INFO : 2025-11-11 16:25:00,438 ] - pin_memory: True
+[ INFO : 2025-11-11 16:25:00,438 ] - style: base
+[ INFO : 2025-11-11 16:25:00,438 ] - debug_attn: False
+[ INFO : 2025-11-11 16:25:00,438 ] - attn_temperature: 1
+[ INFO : 2025-11-11 16:25:00,438 ] - warmup_epochs: 0
+[ INFO : 2025-11-11 16:25:00,438 ] - no_anneal_temperature: True
+[ INFO : 2025-11-11 16:25:00,438 ] - use_scheduler: False
+[ INFO : 2025-11-11 16:25:00,438 ] - scheduler_step_size: 20
+[ INFO : 2025-11-11 16:25:00,438 ] - scheduler_gamma: 0.1
+[ INFO : 2025-11-11 16:25:00,438 ] - =====
+[ INFO : 2025-11-11 16:25:00,438 ] - Modality: multimodal | Device: cuda
+[ INFO : 2025-11-11 16:25:00,438 ] - Audio features path: data/classification/embeddings/audio.h5
+[ INFO : 2025-11-11 16:25:00,438 ] - Video features path: data/classification/features/video_tem_spa_gpa.h5
+[ INFO : 2025-11-11 16:25:00,439 ] - PerVideoBiLSTMMultimodalClassifier(
+  (activation): ReLU()
+  (audio_lstm): LSTM(128, 512, batch_first=True, bidirectional=True)
+  (video_lstm): LSTM(512, 512, batch_first=True, bidirectional=True)
+  (classifier): Sequential(
+    (0): Linear(in_features=2048, out_features=512, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=512, out_features=64, bias=True)
+    (3): ReLU()
+    (4): Linear(in_features=64, out_features=29, bias=True)
+  )
+)
+[ INFO : 2025-11-11 16:25:00,439 ] - Total parameters: 7,915,933
+[ INFO : 2025-11-11 16:25:00,439 ] - Trainable parameters: 7,915,933
+[ INFO : 2025-11-11 16:25:00,825 ] - Using optimizer: AdamW (
+Parameter Group 0
+    amsgrad: False
+    betas: (0.9, 0.999)
+    capturable: False
+    decoupled_weight_decay: True
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    lr: 0.001
+    maximize: False
+    weight_decay: 0.0001
+)
+[ INFO : 2025-11-11 16:25:00,825 ] - = Epoch 1/100 =
+[ INFO : 2025-11-11 16:25:02,991 ] - [Train] Loss=0.2059 | HamAcc=0.0032 | SubAcc=0.0000
+[ INFO : 2025-11-11 16:25:02,992 ] - [Val]   Loss=0.1419 | HamAcc=0.0000 | SubAcc=0.0000
+[ INFO : 2025-11-11 16:25:02,992 ] - ⚠️ No validation improvement @ PATIENCE (1/5)
+[ INFO : 2025-11-11 16:25:02,992 ] - = Epoch 2/100 =
+[ INFO : 2025-11-11 16:25:04,998 ] - [Train] Loss=0.1296 | HamAcc=0.0030 | SubAcc=0.0030
+[ INFO : 2025-11-11 16:25:04,998 ] - [Val]   Loss=0.1126 | HamAcc=0.0557 | SubAcc=0.0557
+[ INFO : 2025-11-11 16:25:05,062 ] - ✅ Saved new best model with Val HamAcc=0.0557
+[ INFO : 2025-11-11 16:25:05,062 ] - = Epoch 3/100 =
+[ INFO : 2025-11-11 16:25:07,078 ] - [Train] Loss=0.0968 | HamAcc=0.0928 | SubAcc=0.0921
+[ INFO : 2025-11-11 16:25:07,078 ] - [Val]   Loss=0.0845 | HamAcc=0.2326 | SubAcc=0.2326
+[ INFO : 2025-11-11 16:25:07,124 ] - ✅ Saved new best model with Val HamAcc=0.2326
+[ INFO : 2025-11-11 16:25:07,124 ] - = Epoch 4/100 =
+[ INFO : 2025-11-11 16:25:09,211 ] - [Train] Loss=0.0782 | HamAcc=0.2704 | SubAcc=0.2663
+[ INFO : 2025-11-11 16:25:09,211 ] - [Val]   Loss=0.0709 | HamAcc=0.3045 | SubAcc=0.3024
+[ INFO : 2025-11-11 16:25:09,256 ] - ✅ Saved new best model with Val HamAcc=0.3045
+[ INFO : 2025-11-11 16:25:09,256 ] - = Epoch 5/100 =
+[ INFO : 2025-11-11 16:25:11,393 ] - [Train] Loss=0.0671 | HamAcc=0.3838 | SubAcc=0.3772
+[ INFO : 2025-11-11 16:25:11,393 ] - [Val]   Loss=0.0659 | HamAcc=0.3972 | SubAcc=0.3930
+[ INFO : 2025-11-11 16:25:11,441 ] - ✅ Saved new best model with Val HamAcc=0.3972
+[ INFO : 2025-11-11 16:25:11,441 ] - = Epoch 6/100 =
+[ INFO : 2025-11-11 16:25:13,586 ] - [Train] Loss=0.0600 | HamAcc=0.4602 | SubAcc=0.4521
+[ INFO : 2025-11-11 16:25:13,587 ] - [Val]   Loss=0.0613 | HamAcc=0.4485 | SubAcc=0.4451
+[ INFO : 2025-11-11 16:25:13,635 ] - ✅ Saved new best model with Val HamAcc=0.4485
+[ INFO : 2025-11-11 16:25:13,635 ] - = Epoch 7/100 =
+[ INFO : 2025-11-11 16:25:15,785 ] - [Train] Loss=0.0530 | HamAcc=0.5287 | SubAcc=0.5170
+[ INFO : 2025-11-11 16:25:15,786 ] - [Val]   Loss=0.0593 | HamAcc=0.4687 | SubAcc=0.4647
+[ INFO : 2025-11-11 16:25:15,834 ] - ✅ Saved new best model with Val HamAcc=0.4687
+[ INFO : 2025-11-11 16:25:15,834 ] - = Epoch 8/100 =
+[ INFO : 2025-11-11 16:25:18,006 ] - [Train] Loss=0.0496 | HamAcc=0.5780 | SubAcc=0.5663
+[ INFO : 2025-11-11 16:25:18,006 ] - [Val]   Loss=0.0561 | HamAcc=0.5521 | SubAcc=0.5445
+[ INFO : 2025-11-11 16:25:18,056 ] - ✅ Saved new best model with Val HamAcc=0.5521
+[ INFO : 2025-11-11 16:25:18,056 ] - = Epoch 9/100 =
+[ INFO : 2025-11-11 16:25:20,226 ] - [Train] Loss=0.0453 | HamAcc=0.6133 | SubAcc=0.6007
+[ INFO : 2025-11-11 16:25:20,227 ] - [Val]   Loss=0.0570 | HamAcc=0.5665 | SubAcc=0.5563
+[ INFO : 2025-11-11 16:25:20,276 ] - ✅ Saved new best model with Val HamAcc=0.5665
+[ INFO : 2025-11-11 16:25:20,276 ] - = Epoch 10/100 =
+[ INFO : 2025-11-11 16:25:22,468 ] - [Train] Loss=0.0418 | HamAcc=0.6543 | SubAcc=0.6402
+[ INFO : 2025-11-11 16:25:22,468 ] - [Val]   Loss=0.0569 | HamAcc=0.5599 | SubAcc=0.5517
+[ INFO : 2025-11-11 16:25:22,468 ] - ⚠️ No validation improvement @ PATIENCE (1/5)
+[ INFO : 2025-11-11 16:25:22,468 ] - = Epoch 11/100 =
+[ INFO : 2025-11-11 16:25:24,692 ] - [Train] Loss=0.0385 | HamAcc=0.6872 | SubAcc=0.6726
+[ INFO : 2025-11-11 16:25:24,692 ] - [Val]   Loss=0.0540 | HamAcc=0.6069 | SubAcc=0.5877
+[ INFO : 2025-11-11 16:25:24,741 ] - ✅ Saved new best model with Val HamAcc=0.6069
+[ INFO : 2025-11-11 16:25:24,742 ] - = Epoch 12/100 =
+[ INFO : 2025-11-11 16:25:26,968 ] - [Train] Loss=0.0356 | HamAcc=0.7113 | SubAcc=0.6961
+[ INFO : 2025-11-11 16:25:26,968 ] - [Val]   Loss=0.0538 | HamAcc=0.6199 | SubAcc=0.5989
+[ INFO : 2025-11-11 16:25:27,017 ] - ✅ Saved new best model with Val HamAcc=0.6199
+[ INFO : 2025-11-11 16:25:27,017 ] - = Epoch 13/100 =
+[ INFO : 2025-11-11 16:25:29,196 ] - [Train] Loss=0.0327 | HamAcc=0.7454 | SubAcc=0.7304
+[ INFO : 2025-11-11 16:25:29,196 ] - [Val]   Loss=0.0560 | HamAcc=0.6112 | SubAcc=0.5856
+[ INFO : 2025-11-11 16:25:29,196 ] - ⚠️ No validation improvement @ PATIENCE (1/5)
+[ INFO : 2025-11-11 16:25:29,196 ] - = Epoch 14/100 =
+[ INFO : 2025-11-11 16:25:31,421 ] - [Train] Loss=0.0305 | HamAcc=0.7630 | SubAcc=0.7453
+[ INFO : 2025-11-11 16:25:31,421 ] - [Val]   Loss=0.0562 | HamAcc=0.6157 | SubAcc=0.5978
+[ INFO : 2025-11-11 16:25:31,421 ] - ⚠️ No validation improvement @ PATIENCE (2/5)
+[ INFO : 2025-11-11 16:25:31,421 ] - = Epoch 15/100 =
+[ INFO : 2025-11-11 16:25:33,645 ] - [Train] Loss=0.0272 | HamAcc=0.7922 | SubAcc=0.7771
+[ INFO : 2025-11-11 16:25:33,645 ] - [Val]   Loss=0.0568 | HamAcc=0.6303 | SubAcc=0.6178
+[ INFO : 2025-11-11 16:25:33,695 ] - ✅ Saved new best model with Val HamAcc=0.6303
+[ INFO : 2025-11-11 16:25:33,695 ] - = Epoch 16/100 =
+[ INFO : 2025-11-11 16:25:35,886 ] - [Train] Loss=0.0246 | HamAcc=0.8176 | SubAcc=0.8004
+[ INFO : 2025-11-11 16:25:35,886 ] - [Val]   Loss=0.0622 | HamAcc=0.6073 | SubAcc=0.5931
+[ INFO : 2025-11-11 16:25:35,886 ] - ⚠️ No validation improvement @ PATIENCE (1/5)
+[ INFO : 2025-11-11 16:25:35,886 ] - = Epoch 17/100 =
+[ INFO : 2025-11-11 16:25:38,090 ] - [Train] Loss=0.0230 | HamAcc=0.8358 | SubAcc=0.8191
+[ INFO : 2025-11-11 16:25:38,090 ] - [Val]   Loss=0.0633 | HamAcc=0.6298 | SubAcc=0.6059
+[ INFO : 2025-11-11 16:25:38,090 ] - ⚠️ No validation improvement @ PATIENCE (2/5)
+[ INFO : 2025-11-11 16:25:38,090 ] - = Epoch 18/100 =
+[ INFO : 2025-11-11 16:25:40,308 ] - [Train] Loss=0.0197 | HamAcc=0.8589 | SubAcc=0.8431
+[ INFO : 2025-11-11 16:25:40,308 ] - [Val]   Loss=0.0603 | HamAcc=0.6391 | SubAcc=0.6129
+[ INFO : 2025-11-11 16:25:40,357 ] - ✅ Saved new best model with Val HamAcc=0.6391
+[ INFO : 2025-11-11 16:25:40,357 ] - = Epoch 19/100 =
+[ INFO : 2025-11-11 16:25:42,578 ] - [Train] Loss=0.0174 | HamAcc=0.8795 | SubAcc=0.8646
+[ INFO : 2025-11-11 16:25:42,579 ] - [Val]   Loss=0.0645 | HamAcc=0.6448 | SubAcc=0.6120
+[ INFO : 2025-11-11 16:25:42,628 ] - ✅ Saved new best model with Val HamAcc=0.6448
+[ INFO : 2025-11-11 16:25:42,628 ] - = Epoch 20/100 =
+[ INFO : 2025-11-11 16:25:44,860 ] - [Train] Loss=0.0161 | HamAcc=0.8884 | SubAcc=0.8733
+[ INFO : 2025-11-11 16:25:44,860 ] - [Val]   Loss=0.0648 | HamAcc=0.6397 | SubAcc=0.6018
+[ INFO : 2025-11-11 16:25:44,860 ] - ⚠️ No validation improvement @ PATIENCE (1/5)
+[ INFO : 2025-11-11 16:25:44,860 ] - = Epoch 21/100 =
+[ INFO : 2025-11-11 16:25:47,084 ] - [Train] Loss=0.0146 | HamAcc=0.8995 | SubAcc=0.8851
+[ INFO : 2025-11-11 16:25:47,084 ] - [Val]   Loss=0.0713 | HamAcc=0.6396 | SubAcc=0.6147
+[ INFO : 2025-11-11 16:25:47,084 ] - ⚠️ No validation improvement @ PATIENCE (2/5)
+[ INFO : 2025-11-11 16:25:47,084 ] - = Epoch 22/100 =
+[ INFO : 2025-11-11 16:25:49,323 ] - [Train] Loss=0.0135 | HamAcc=0.9095 | SubAcc=0.8959
+[ INFO : 2025-11-11 16:25:49,323 ] - [Val]   Loss=0.0690 | HamAcc=0.6348 | SubAcc=0.6195
+[ INFO : 2025-11-11 16:25:49,324 ] - ⚠️ No validation improvement @ PATIENCE (3/5)
+[ INFO : 2025-11-11 16:25:49,324 ] - = Epoch 23/100 =
+[ INFO : 2025-11-11 16:25:51,551 ] - [Train] Loss=0.0118 | HamAcc=0.9222 | SubAcc=0.9104
+[ INFO : 2025-11-11 16:25:51,551 ] - [Val]   Loss=0.0688 | HamAcc=0.6478 | SubAcc=0.6218
+[ INFO : 2025-11-11 16:25:51,600 ] - ✅ Saved new best model with Val HamAcc=0.6478
+[ INFO : 2025-11-11 16:25:51,600 ] - = Epoch 24/100 =
+[ INFO : 2025-11-11 16:25:53,858 ] - [Train] Loss=0.0094 | HamAcc=0.9398 | SubAcc=0.9292
+[ INFO : 2025-11-11 16:25:53,858 ] - [Val]   Loss=0.0762 | HamAcc=0.6368 | SubAcc=0.6254
+[ INFO : 2025-11-11 16:25:53,858 ] - ⚠️ No validation improvement @ PATIENCE (1/5)
+[ INFO : 2025-11-11 16:25:53,858 ] - = Epoch 25/100 =
+[ INFO : 2025-11-11 16:25:56,083 ] - [Train] Loss=0.0085 | HamAcc=0.9434 | SubAcc=0.9333
+[ INFO : 2025-11-11 16:25:56,083 ] - [Val]   Loss=0.0819 | HamAcc=0.6445 | SubAcc=0.6295
+[ INFO : 2025-11-11 16:25:56,083 ] - ⚠️ No validation improvement @ PATIENCE (2/5)
+[ INFO : 2025-11-11 16:25:56,083 ] - = Epoch 26/100 =
+[ INFO : 2025-11-11 16:25:58,346 ] - [Train] Loss=0.0077 | HamAcc=0.9498 | SubAcc=0.9416
+[ INFO : 2025-11-11 16:25:58,346 ] - [Val]   Loss=0.0814 | HamAcc=0.6558 | SubAcc=0.6401
+[ INFO : 2025-11-11 16:25:58,394 ] - ✅ Saved new best model with Val HamAcc=0.6558
+[ INFO : 2025-11-11 16:25:58,394 ] - = Epoch 27/100 =
+[ INFO : 2025-11-11 16:26:00,582 ] - [Train] Loss=0.0062 | HamAcc=0.9605 | SubAcc=0.9534
+[ INFO : 2025-11-11 16:26:00,583 ] - [Val]   Loss=0.0839 | HamAcc=0.6614 | SubAcc=0.6438
+[ INFO : 2025-11-11 16:26:00,631 ] - ✅ Saved new best model with Val HamAcc=0.6614
+[ INFO : 2025-11-11 16:26:00,631 ] - = Epoch 28/100 =
+[ INFO : 2025-11-11 16:26:02,855 ] - [Train] Loss=0.0057 | HamAcc=0.9644 | SubAcc=0.9577
+[ INFO : 2025-11-11 16:26:02,855 ] - [Val]   Loss=0.0889 | HamAcc=0.6469 | SubAcc=0.6299
+[ INFO : 2025-11-11 16:26:02,855 ] - ⚠️ No validation improvement @ PATIENCE (1/5)
+[ INFO : 2025-11-11 16:26:02,855 ] - = Epoch 29/100 =
+[ INFO : 2025-11-11 16:26:05,058 ] - [Train] Loss=0.0048 | HamAcc=0.9694 | SubAcc=0.9634
+[ INFO : 2025-11-11 16:26:05,058 ] - [Val]   Loss=0.0898 | HamAcc=0.6580 | SubAcc=0.6399
+[ INFO : 2025-11-11 16:26:05,058 ] - ⚠️ No validation improvement @ PATIENCE (2/5)
+[ INFO : 2025-11-11 16:26:05,058 ] - = Epoch 30/100 =
+[ INFO : 2025-11-11 16:26:07,279 ] - [Train] Loss=0.0041 | HamAcc=0.9741 | SubAcc=0.9695
+[ INFO : 2025-11-11 16:26:07,279 ] - [Val]   Loss=0.0918 | HamAcc=0.6495 | SubAcc=0.6377
+[ INFO : 2025-11-11 16:26:07,279 ] - ⚠️ No validation improvement @ PATIENCE (3/5)
+[ INFO : 2025-11-11 16:26:07,279 ] - = Epoch 31/100 =
+[ INFO : 2025-11-11 16:26:09,543 ] - [Train] Loss=0.0034 | HamAcc=0.9792 | SubAcc=0.9756
+[ INFO : 2025-11-11 16:26:09,543 ] - [Val]   Loss=0.0976 | HamAcc=0.6421 | SubAcc=0.6187
+[ INFO : 2025-11-11 16:26:09,543 ] - ⚠️ No validation improvement @ PATIENCE (4/5)
+[ INFO : 2025-11-11 16:26:09,543 ] - = Epoch 32/100 =
+[ INFO : 2025-11-11 16:26:11,809 ] - [Train] Loss=0.0045 | HamAcc=0.9720 | SubAcc=0.9668
+[ INFO : 2025-11-11 16:26:11,809 ] - [Val]   Loss=0.0970 | HamAcc=0.6473 | SubAcc=0.6264
+[ INFO : 2025-11-11 16:26:11,809 ] - ⚠️ No validation improvement @ PATIENCE (5/5)
+[ INFO : 2025-11-11 16:26:11,809 ] - 🛑 Early stopping
+[ INFO : 2025-11-11 16:26:11,985 ] - Saved training loss plot to models/classification/per_video/figs/shallow_classifier_multimodal_features_base_losses.png
+[ INFO : 2025-11-11 16:26:11,985 ] - Saved training accuracy plot to models/classification/per_video/figs/shallow_classifier_multimodal_features_base_accuracies.png
+[ INFO : 2025-11-11 16:26:11,998 ] - Loaded model from models/classification/per_video/shallow_classifier_multimodal_features_base.pth
+[ INFO : 2025-11-11 16:26:12,354 ] - [Test] Loss=0.0836 | HamAcc=0.6720 | SubAcc=0.6583
+[ INFO : 2025-11-11 16:26:12,357 ] - Updated results table saved to models/classification/per_video/test_results.csv
+[ INFO : 2025-11-11 16:26:12,359 ] - 
+                                  base_name   modality style optimizer    lr  weight_decay  test_loss  test_hacc  test_sacc           timestamp  num_params  num_trainable  pos_weight
+shallow_classifier_multimodal_features_base multimodal  base     adamw 0.001        0.0001   0.083645   0.671964   0.658259 2025-11-05 14:08:10     7915933        7915933       False
+shallow_classifier_multimodal_features_base multimodal  base     adamw 0.001        0.0001   0.083645   0.671964   0.658259 2025-11-11 16:26:12     7915933        7915933       False

@@ -1,6 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Unified Audio/Video/Multimodal Per-Video Training Script.
+
+This script trains and evaluates configurable BiLSTM-based classifiers on audio,
+video, or multimodal embeddings extracted from videos. Supports various model
+styles including base, regularized, deep, wide, and residual architectures, with
+optional audio-guided visual attention.
+
+Main Componentes:
+    - Command-line argument parsing with flexible training options and optimizer settings.
+    - Dataset loading for audio, video, and multimodal embeddings.
+    - Model building with configurable architectures and multimodal fusion.
+    - Training loop with early stopping and learning rate scheduler support.
+    - Evaluation with multilabel accuracy metrics (Hamming and Subset accuracy).
+    - Attention debug logging and annealing of attention temperature.
+    - Result logging with saving model checkpoints and training curves.
+    - Test evaluation and results summary CSV logging.
+
+Usage:
+    Run with appropriate command line args, e.g.:
+    python train_per_video.py --modality multimodal --style base --train
+
+@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@date 2025-11-11
+"""
+
 import os
 import argparse
 import logging
@@ -18,6 +44,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 from src.datasets import PerVideoMultimodalDataset
+
 from src.models import (
     PerVideoBiLSTMAudioClassifier,
     PerVideoBiLSTMVideoClassifier,
@@ -34,6 +61,12 @@ from src.utils import (
 
 # ---- Argument Parsing ----
 def parse_args():
+    """
+    Parse command line arguments for training configuration.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
     parser = argparse.ArgumentParser(description="Unified Audio/Video/Multimodal Per-Video Training")
     parser.add_argument("--modality", type=str, required=True, choices=["audio", "video", "multimodal"])
     parser.add_argument("--AGVattn", action="store_true", default=False,
@@ -84,6 +117,15 @@ def parse_args():
 
 # ---- Device Setup ----
 def setup_device_and_workers(args):
+    """
+    Determine computation device and optimal DataLoader workers and pin_memory settings.
+
+    Args:
+        args (Namespace): Parsed command line arguments.
+
+    Returns:
+        Tuple[torch.device, Namespace]: Device and updated args with num_workers and pin_memory.
+    """
     device = (
         torch.device('cuda') if torch.cuda.is_available() else
         torch.device('mps') if getattr(torch.backends, 'mps', None)
@@ -102,11 +144,21 @@ def setup_device_and_workers(args):
         args.pin_memory = True
 
     print(f"[INFO] Using device: {device}")
+
     return device, args
 
 
 # ---- Logger Setup ----
 def setup_logger(base_name):
+    """
+    Setup logger to file and console with timestamped log file.
+
+    Args:
+        base_name (str): Base name for logfile.
+
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
     log_dir = "models/classification/per_video/logs/"
     os.makedirs(log_dir, exist_ok=True)
     current_time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -121,11 +173,22 @@ def setup_logger(base_name):
 
     logger.addHandler(fh)
     logger.addHandler(logging.StreamHandler())
+
     return logger
 
 
 # ---- Model Builder ----
 def build_model(args, device):
+    """
+    Build and instantiate the model based on modality and style selections.
+
+    Args:
+        args (Namespace): Parsed command line arguments.
+        device (torch.device): Target device.
+
+    Returns:
+        Tuple[nn.Module, str, str, str, int]: Model, base_name, audio_path, video_path, warmup_epochs.
+    """
     posw_suffix = "_posweight" if args.pos_weight else ""
     style_suffix = args.style
 
@@ -160,11 +223,23 @@ def build_model(args, device):
         model = model_class(num_classes=29, style=args.style, debug=args.debug_attn, temperature=args.attn_temperature)
 
     model = model.to(device)
+
     return model, base_name, audio_path, video_path, warmup_epochs if 'warmup_epochs' in locals() else 0
 
 
 # ---- Data Loaders Builder ----
 def get_dataloaders(args, audio_path, video_path):
+    """
+    Prepare train, validation, and test DataLoaders.
+
+    Args:
+        args (Namespace): Parsed cli args.
+        audio_path (str): Path to audio embeddings.
+        video_path (str): Path to video embeddings.
+
+    Returns:
+        Tuple[DataLoader, DataLoader, DataLoader]: Train, val, test loaders.
+    """
     dataset_kwargs = dict(
         annotations_file="data/annotations.csv",
         audio_h5_path=audio_path,

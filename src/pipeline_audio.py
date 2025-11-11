@@ -1,4 +1,24 @@
-# src/_class_pipeline_audio.py
+# src/pipeline_audio.py
+
+"""
+Audio feature extraction pipeline based on VGGish architecture.
+
+This module provides classes and functions to process raw audio into log-mel
+spectrogram inputs, extract deep learned embeddings using a VGG-like CNN (VGGAudio),
+and perform PCA whitening and quantization postprocessing consistent with AudioSet.
+
+Key components:
+    - VGGAudio: CNN feature extractor producing intermediate features and embeddings.
+    - PostprocessorAudio: Applies PCA and quantization transforms preserving gradients.
+    - AudioPipeline: High-level pipeline wrapping VGGAudio with optional preprocessing
+    (waveform to examples) and postprocessing steps, supporting pretrained weights.
+
+@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@date 2025-11-11
+
+Notes:
+    Code adapted from: https://github.com/harritaylor/torchvggish/
+"""
 
 import numpy as np
 
@@ -12,9 +32,15 @@ from . import vggish_input
 
 class VGGAudio(nn.Module):
     """
-    
+    VGG-like convolutional neural network for audio feature extraction.
+
+    Processes log-mel spectrogram inputs as images and outputs intermediate features and/or embeddings.
+
+    Args:
+        features (nn.Module): Feature extraction backbone (e.g., CNN layers).
     """
-    def __init__(self, features):
+
+    def __init__(self, features: nn.Module):
         super(VGGAudio, self).__init__()
         self.features = features
         self.embeddings = nn.Sequential(
@@ -26,9 +52,23 @@ class VGGAudio(nn.Module):
             nn.ReLU(True)
         )
 
-    def forward(self, x, return_feats=True, return_embs=True):
-        # Expected x shape: (B, C, H, W) as (B, 1, 96, 64)
+    def forward(self, x: torch.Tensor, return_feats: bool = True, return_embs: bool = True) -> dict:
+        """
+        Forward pass.
 
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, 1, 96, 64) representing log-mel spectrograms.
+            return_feats (bool): Whether to return intermediate features.
+            return_embs (bool): Whether to return embeddings.
+
+        Returns:
+            dict: Dictionary with keys possibly including:
+                'feats': intermediate features tensor.
+                'embs': embeddings tensor.
+        
+        Raises:
+            RuntimeError: If neither features nor embeddings are requested.
+        """
         # Extract features treating log-mel as an image of (1, 96, 64)
         x = self.features(x) # (512, 6, 4)
         
@@ -48,13 +88,16 @@ class VGGAudio(nn.Module):
             x = self.embeddings(x) # (10, 128)
 
             out['embs'] = x
+            
         if not out:
             raise RuntimeError("AudioPipeline returns nothing!")
+
         return out
 
 
 class PostprocessorAudio(nn.Module):
-    """Post-processes VGGish embeddings. Returns a torch.Tensor instead of a
+    """
+    Post-processes VGGish embeddings. Returns a torch.Tensor instead of a
     numpy array in order to preserve the gradient.
 
     "The initial release of AudioSet included 128-D VGGish embeddings for each
@@ -67,7 +110,9 @@ class PostprocessorAudio(nn.Module):
     """
 
     def __init__(self):
-        """Constructs a postprocessor."""
+        """
+        Initializes PCA matrices and parameters as non-trainable parameters.
+        """
         super(PostprocessorAudio, self).__init__()
         
         # Create empty matrix, for user's state_dict to load
@@ -83,17 +128,15 @@ class PostprocessorAudio(nn.Module):
         self.pca_eigen_vectors = nn.Parameter(self.pca_eigen_vectors, requires_grad=False)
         self.pca_means = nn.Parameter(self.pca_means, requires_grad=False)
 
-
-    def postprocess(self, embeddings_batch):
-        """Applies tensor postprocessing to a batch of embeddings.
+    def postprocess(self, embeddings_batch: torch.Tensor) -> torch.Tensor:
+        """
+        Applies PCA whitening and quantization to a batch of embeddings.
 
         Args:
-          embeddings_batch: An tensor of shape [batch_size, embedding_size]
-            containing output from the embedding layer of VGGish.
+            embeddings_batch (torch.Tensor): Tensor of shape (batch_size, embedding_size).
 
         Returns:
-          A tensor of the same shape as the input, containing the PCA-transformed,
-          quantized, and clipped version of the input.
+            torch.Tensor: Processed embeddings tensor with the same shape.
         """
         assert len(embeddings_batch.shape) == 2, "Expected 2-d batch, got %r" % (
             embeddings_batch.shape,
@@ -128,12 +171,26 @@ class PostprocessorAudio(nn.Module):
 
         return torch.squeeze(quantized_embeddings)
 
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forwards input through postprocessing (calls `postprocess`).
 
-    def forward(self, x):
+        Args:
+            x (torch.Tensor): Input embeddings tensor.
+
+        Returns:
+            torch.Tensor: Postprocessed embeddings.
+        """
         return self.postprocess(x)
 
 
-def make_layers():
+def make_layers() -> nn.Sequential:
+    """
+    Constructs the convolutional layers for the VGG audio feature extractor.
+
+    Returns:
+        nn.Sequential: Layer sequence with convs, ReLUs, and max-pooling as defined by VGGish architecture.
+    """
     layers = []
     in_channels = 1
     for v in [64, "M", 128, "M", 256, 256, "M", 512, 512, "M"]:
@@ -148,9 +205,19 @@ def make_layers():
 
 class AudioPipeline(nn.Module):
     """
-    
+    Audio feature extraction pipeline wrapping VGGAudio, with optional preprocessing and postprocessing.
+
+    Downloads pretrained weights if requested.
+
+    Args:
+        pretrained (bool): Whether to load pretrained VGGish weights.
+        device (torch.device or None): Device to load model onto; auto-selects if None.
+        preprocess (bool): Whether to preprocess raw input waveforms into examples.
+        postprocess (bool): Whether to apply PCA whitening and quantization postprocessing.
+        progress (bool): Show download progress when loading pretrained weights.
     """
-    def __init__(self, pretrained=True, device=None, preprocess=False, postprocess=False, progress=True):
+
+    def __init__(self, pretrained: bool = True, device: torch.device = None, preprocess: bool = False, postprocess: bool = False, progress: bool = True):
         super().__init__()
 
         self.vgg = VGGAudio(make_layers())
@@ -192,17 +259,45 @@ class AudioPipeline(nn.Module):
 
         self.to(self.device)
 
-    def forward(self, x, fs=None, return_feats=False, return_embs=False):
-    
+    def forward(self, x, fs=None, return_feats=False, return_embs=False) -> dict:
+        """
+        Processes input audio through the VGGish pipeline.
+
+        Args:
+            x (numpy.ndarray or str or torch.Tensor): Raw waveform array, filename, or tensor.
+            fs (int or None): Sampling frequency if `x` is a waveform array.
+            return_feats (bool): Whether to return intermediate features.
+            return_embs (bool): Whether to return embeddings.
+
+        Returns:
+            dict: Keys include 'feats', 'embs', optionally 'embs_pca' if postprocessing enabled.
+        
+        Raises:
+            AttributeError: If `x` is not supported type for preprocessing.
+        """
         if self.preprocess:
             x = self._preprocess(x, fs)
+
         x = x.to(self.device)
+
         out = self.vgg(x, return_feats, return_embs)
+
         if self.postprocess and return_embs:
             out['embs_pca'] = self._postprocess(out['embs'])
+            
         return out
 
     def _preprocess(self, x, fs):
+        """
+        Preprocess raw audio input to log-mel spectrogram examples.
+
+        Args:
+            x (numpy.ndarray or str): Raw waveform or filename.
+            fs (int): Sampling frequency.
+
+        Returns:
+            torch.Tensor: Processed log-mel examples.
+        """
         if isinstance(x, np.ndarray):
             x = vggish_input.waveform_to_examples(x, fs)
         elif isinstance(x, str):
@@ -211,5 +306,14 @@ class AudioPipeline(nn.Module):
             raise AttributeError("Unsupported type for preprocessing")
         return x
 
-    def _postprocess(self, x):
+    def _postprocess(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Applies PCA whitening and quantization postprocessing on embeddings.
+
+        Args:
+            x (torch.Tensor): Embeddings tensor.
+
+        Returns:
+            torch.Tensor: Postprocessed embeddings tensor.
+        """
         return self.pproc(x)

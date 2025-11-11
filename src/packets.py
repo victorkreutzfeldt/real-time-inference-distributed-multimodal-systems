@@ -1,19 +1,44 @@
 # src/packets.py
 
+"""
+Packet representation and transmission metadata for media streaming simulation.
+
+This module defines Packet and TransmittedPacket classes encapsulating audio/video media packet
+attributes, timestamps, sizes, and transmission-related metadata including delays and loss indicators.
+
+The module also provides a utility function `load_packets` to load and reconstruct transmitted packet lists
+from compressed pickled files, associating them with given stream types.
+
+@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@date 2025-11-11
+"""
+
 from typing import List, Optional, Any, Tuple
 
 import gzip
 import pickle
 
-import h5py
-import numpy as np
-
 from fractions import Fraction
+
 
 class Packet:
     """
-    Packet class representing a generic media packet (audio or video).
+    Representation of a generic media packet, audio or video.
+
+    Args:
+        stream_type (str): Type of the stream, e.g., 'audio' or 'video'.
+        pts (Optional[int]): Presentation timestamp as an integer.
+        pts_time (Optional[Fraction]): Presentation timestamp as a Fraction in seconds.
+        duration (Optional[Fraction]): Duration of the packet in seconds.
+        size_bits (int): Size of the packet in bits.
+        sample_rate (Optional[float]): Sampling rate of the audio stream if applicable.
+        time_base (Optional[Fraction]): Time base denominator of the timestamps.
+        nb_channels (Optional[int]): Number of audio channels, if audio.
+        resolution (Optional[Tuple[int, int]]): Resolution (width, height) for video packets.
+        payload (Any): Payload data of the packet.
     """
+
+
     def __init__(
         self,
         stream_type: str,
@@ -41,6 +66,7 @@ class Packet:
 
         self.payload = payload
 
+
     def __str__(self) -> str:
         pts_str = str(self.pts) if self.pts is not None else "None"
         pts_time_str = f"{self.pts_time:.3f}s" if self.pts_time is not None else "None"
@@ -54,6 +80,7 @@ class Packet:
                 f"size={self.size_bits} bits, nb_channels={channels_str}, "
                 f"resolution={resolution_str})")
 
+
     def __repr__(self) -> str:
         return (f"Packet(stream_type={self.stream_type!r}, pts={self.pts!r}, "
                 f"pts_time={self.pts_time!r}, duration={self.duration!r}, "
@@ -63,9 +90,18 @@ class Packet:
 
 class TransmittedPacket(Packet):
     """
-    TransmittedPacket class representing a media packet with transmission metadata.
-    Adds tx_delay, arrival_time, and is_lost to base Packet fields.
+    Extension of Packet with transmission metadata for simulated network behavior.
+
+    Adds transmission delay, arrival time, and packet loss state.
+
+    Args:
+        tx_delay (Optional[float]): Transmission delay in seconds.
+        arrival_time (Optional[Fraction]): Arrival time of the packet.
+        is_lost (bool): Flag indicating if the packet was lost in transmission.
+        kwargs: Arguments to pass to the base Packet class.
     """
+
+
     def __init__(
         self,
         tx_delay: Optional[float] = None,
@@ -78,6 +114,7 @@ class TransmittedPacket(Packet):
         self.arrival_time = arrival_time
         self.is_lost = is_lost
 
+
     def __str__(self) -> str:
         pts_str = str(self.pts) if self.pts is not None else "None"
         pts_time_str = f"{float(self.pts_time):.3f}s" if self.pts_time is not None else "None"
@@ -85,6 +122,7 @@ class TransmittedPacket(Packet):
         arrival_str = f"{float(self.arrival_time):.3f}s" if hasattr(self, 'arrival_time') and self.arrival_time is not None else "None"
 
         return (f"Packet(pts={pts_str}, pts_time={pts_time_str}, tx_delay={tx_delay_str}, arrival_time={arrival_str})")
+
 
     def __repr__(self) -> str:
         return (f"Packet(pts={self.pts!r}, pts_time={self.pts_time!r}, "
@@ -99,16 +137,15 @@ def load_packets(
 
 ) -> List[TransmittedPacket]:
     """
-    Loads pre-extracted packets (from HDF5 + pickled metadata).
+    Load a list of transmitted packets from a compressed pickled file, reconstructing metadata.
 
     Args:
-        stream_type (str): 'audio' or 'video'.
-        packets_path (str): Path to the pickled packets file.   
+        stream_type (str): Stream modality ('audio' or 'video').
+        packets_path (str): Path to the gzip compressed pickle file with stored packets.
 
-    Returns:    
-        List[TransmittedPacket]: List of loaded transmitted packets.
+    Returns:
+        List[TransmittedPacket]: List of TransmittedPacket instances loaded from file.
     """
-
     # Load packets' data
     with gzip.open(packets_path, 'rb') as f:
         packets = pickle.load(f)

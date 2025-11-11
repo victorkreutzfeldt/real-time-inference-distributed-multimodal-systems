@@ -13,7 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Global parameters for the VGGish model.
+"""
+Global parameters for the VGGish model.
 
 See vggish_slim.py for more information.
 """
@@ -24,7 +25,7 @@ NUM_BANDS = 64  # Frequency bands in input mel-spectrogram patch.
 EMBEDDING_SIZE = 128  # Size of embedding layer.
 
 # Hyperparameters used in feature and example generation.
-SAMPLE_RATE = 16000
+SAMPLING_RATE = 16000
 STFT_WINDOW_LENGTH_SECONDS = 0.025
 STFT_HOP_LENGTH_SECONDS = 0.010
 NUM_MEL_BINS = NUM_BANDS

@@ -1,11 +1,45 @@
 # src/models.py
 
+"""
+Neural network models for multimodal audio-visual video classification.
+
+This module defines configurable BiLSTM-based classifiers for audio, video, and
+multimodal fusion tasks, featuring several classifier head styles including base,
+regularized, wide, deep, and residual block variants.
+
+Key components:
+    - Activation selector utility (_act) supporting GELU, SiLU, and ReLU.
+    - Residual fully connected block (_ResidualBlock) with layer norm and dropout.
+    - PerVideoBiLSTMAudioClassifier: Audio-only BiLSTM classifier.
+    - PerVideoBiLSTMVideoClassifier: Video-only BiLSTM classifier, supports 4D/5D inputs.
+    - PerVideoBiLSTMMultimodalClassifier: Fuses audio and video streams with configurable classifier heads.
+    - AGVAttn: Audio-guided visual attention module with temperature scaling and debug outputs.
+    - PerVideoBiLSTMAGVisualAttnMultimodalClassifier: Multimodal model integrating audio-guided visual attention with BiLSTM fusion.
+
+Design permits flexible architecture and activation choices for experimentation
+with multimodal sequential video classification in a real-time distributed inference framework.
+
+@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@date 2025-11-11
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from typing import Tuple, Union
 
-def _act(name: str):
+
+def _act(name: str) -> nn.Module:
+    """
+    Utility function to select activation function by name.
+
+    Args:
+        name (str): Name of the activation function. Supported: 'gelu', 'silu', others default to ReLU.
+
+    Returns:
+        nn.Module: Corresponding PyTorch activation function module.
+    """
     if name.lower() == "gelu":
         return nn.GELU()
     if name.lower() == "silu":
@@ -14,7 +48,16 @@ def _act(name: str):
 
 
 class _ResidualBlock(nn.Module):
-    def __init__(self, dim, dropout_p=0.2, activation="gelu"):
+    """
+    A residual fully connected block with layer normalization, dropout, and configurable activation.
+
+    Args:
+        dim (int): Dimension of input and output embeddings.
+        dropout_p (float): Dropout probability.
+        activation (str): Activation function name ('gelu' or others default to ReLU).
+    """
+
+    def __init__(self, dim: int, dropout_p=0.2, activation="gelu"):
         super().__init__()
         self.fc1 = nn.Linear(dim, dim)
         self.ln1 = nn.LayerNorm(dim)
@@ -23,13 +66,35 @@ class _ResidualBlock(nn.Module):
         self.drop = nn.Dropout(dropout_p)
         self.act = _act(activation)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the Residual Block.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (..., dim).
+
+        Returns:
+            torch.Tensor: Output tensor of the same shape as input.
+        """
         h = self.act(self.ln1(self.fc1(x)))
         h = self.drop(self.act(self.ln2(self.fc2(h))))
         return x + h
 
 
 class PerVideoBiLSTMAudioClassifier(nn.Module):
+    """
+    BiLSTM-based audio classifier with configurable classification head styles.
+
+    Args:
+        input_dim (int): Dimensionality of input audio embeddings.
+        num_classes (int): Number of output classes.
+        style (str): Classification head style: 'base', 'reg', 'wide', 'deep', or 'res'.
+        hidden_dim (int): Hidden LSTM dimension size.
+        num_layers (int): Number of LSTM layers.
+        dropout_p (float): Dropout probability for classification head.
+        activation (str): Activation function name ('relu' or 'gelu').
+    """
+
     def __init__(self, input_dim=128, num_classes=29, style="base", hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()
@@ -80,9 +145,17 @@ class PerVideoBiLSTMAudioClassifier(nn.Module):
             self.act0 = nn.GELU()
         else:
             raise ValueError(f"Unknown style {style}")
-        
-    def forward(self, x):
-        
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, seq_len, input_dim).
+
+        Returns:
+            torch.Tensor: Logits of shape (batch_size, seq_len, num_classes).
+        """
         feats, _ = self.lstm(x)
 
         if self.style == "res":
@@ -95,6 +168,19 @@ class PerVideoBiLSTMAudioClassifier(nn.Module):
 
 
 class PerVideoBiLSTMVideoClassifier(nn.Module):
+    """
+    BiLSTM-based video classifier with configurable classification head styles.
+
+    Args:
+        input_dim (int): Dimensionality of input video embeddings.
+        num_classes (int): Number of output classes.
+        style (str): Style of classification head.
+        hidden_dim (int): Hidden dimension size for LSTM.
+        num_layers (int): Number of LSTM layers.
+        dropout_p (float): Dropout probability.
+        activation (str): Activation function name.
+    """
+
     def __init__(self, input_dim=512, num_classes=29, style="base", hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()
@@ -144,7 +230,17 @@ class PerVideoBiLSTMVideoClassifier(nn.Module):
         else:
             raise ValueError(f"Unknown style {style}")
         
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor; accepts 4D or 5D video embeddings.
+                              If 5D, spatial dimensions are averaged.
+
+        Returns:
+            torch.Tensor: Classification logits per token.
+        """
         if x.dim() == 5:
             x = x.mean(dim=(-1, -2))
         feats, _ = self.lstm(x)
@@ -159,6 +255,22 @@ class PerVideoBiLSTMVideoClassifier(nn.Module):
 
 
 class PerVideoBiLSTMMultimodalClassifier(nn.Module):
+    """
+    Multimodal BiLSTM classifier fusing audio and video streams.
+
+    Supports various styles of classifier heads including residual blocks.
+
+    Args:
+        audio_dim (int): Audio feature dimension.
+        video_dim (int): Video feature dimension.
+        num_classes (int): Number of output classes.
+        style (str): Style of classification head.
+        hidden_dim (int): Hidden size used in LSTMs.
+        num_layers (int): Number of LSTM layers.
+        dropout_p (float): Dropout probability.
+        activation (str): Activation function name.
+    """
+
     def __init__(self, audio_dim=128, video_dim=512, num_classes=29, style="base", hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()
@@ -236,10 +348,22 @@ class PerVideoBiLSTMMultimodalClassifier(nn.Module):
         else:
             raise ValueError(f"Unknown style '{style}'")
         
-    def forward(self, audio, video):
-        
+    def forward(self, audio: torch.Tensor, video: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass.
+
+        Args:
+            audio (torch.Tensor): Audio input tensor (batch_size, seq_len, audio_dim).
+            video (torch.Tensor): Video input tensor (batch_size, seq_len, video_dim) or 5D tensor to be spatially averaged.
+
+        Returns:
+            torch.Tensor: Logits per token of shape (batch_size, seq_len, num_classes).
+        """
         if video.dim() == 5:
             video = video.mean(dim=(-1, -2))
+
+        if video.dim() == 4:
+            video = video.mean(dim=(-1, -2)) 
         
         audio_out, _ = self.audio_lstm(audio)
         video_out, _ = self.video_lstm(video)
@@ -257,8 +381,17 @@ class PerVideoBiLSTMMultimodalClassifier(nn.Module):
 
 class AGVAttn(nn.Module):
     """
-    Audio-Guided Visual Attention with temperature control and debugging hooks.
+    Audio-Guided Visual Attention module with temperature scaling and optional debug outputs.
+
+    Args:
+        emb_att_dim (int): Dimension for projected audio/video embeddings.
+        num_visual_regions (int): Number of visual spatial regions.
+        temperature (float): Temperature scaling for attention logits.
+        init_weights (bool): Whether to initialize weights with Xavier uniform.
+        debug (bool): Enables debug outputs of attention maps.
+        dropout_p (float): Dropout rate applied to projections.
     """
+
     def __init__(self, emb_att_dim=512, num_visual_regions=49, temperature=1.0, init_weights=False, debug=False, dropout_p=0.2):
         super().__init__()
         self.temperature = temperature
@@ -294,7 +427,17 @@ class AGVAttn(nn.Module):
 
             torch.nn.init.xavier_uniform_(self.attn_scores.weight)
 
-    def forward(self, audio, video):
+    def forward(self, audio: torch.Tensor, video: torch.Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, ...]]:
+        """
+        Forward pass generating attended visual embeddings guided by audio.
+
+        Args:
+            audio (torch.Tensor): Audio embeddings (batch_size, emb_dim).
+            video (torch.Tensor): Video embeddings (batch_size, channels, height, width).
+
+        Returns:
+            torch.Tensor or tuple: Attended video embeddings; if debug is True also returns attention maps and raw scores.
+        """
 
         # TODO: Correct this model!!!
 
@@ -335,12 +478,34 @@ class AGVAttn(nn.Module):
         
         return video_attn
 
-    # Add method to update temperature during training
-    def set_temperature(self, new_temp):
+    def set_temperature(self, new_temp: float) -> None:
+        """
+        Update the temperature used to scale attention scores.
+
+        Args:
+            new_temp (float): New temperature value.
+        """
         self.temperature = new_temp
 
 
 class PerVideoBiLSTMAGVisualAttnMultimodalClassifier(nn.Module):
+    """
+    Multimodal classifier integrating audio-guided visual attention with BiLSTM fusion.
+
+    Args:
+        audio_dim (int): Audio input dimension.
+        video_dim (int): Visual input dimension.
+        emb_att_dim (int): Dimension for attention embeddings.
+        num_classes (int): Output class count.
+        style (str): Classification head style.
+        debug (bool): Enables attention debug outputs.
+        temperature (float): Temperature applied to attention logits.
+        hidden_dim (int): Hidden size for LSTM layers.
+        num_layers (int): Number of LSTM layers.
+        dropout_p (float): Dropout rate.
+        activation (str): Activation function name.
+    """
+
     def __init__(self, audio_dim=128, video_dim=512, emb_att_dim=128, num_classes=29, style="base", debug=False, temperature=1.0, hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()
@@ -419,11 +584,20 @@ class PerVideoBiLSTMAGVisualAttnMultimodalClassifier(nn.Module):
             raise ValueError(f"Unknown style '{style}'")
         
     def forward(self, audio, video):
-    
+        """
+        Forward pass applying audio-guided visual attention and multimodal fusion.
+
+        Args:
+            audio (torch.Tensor): Audio embeddings tensor.
+            video (torch.Tensor): Video embeddings tensor including sequence dimension.
+
+        Returns:
+            torch.Tensor: Output logits per token.
+        """
         # AG attention: process each chunk for each video
         video_attn = []
         for t in range(video.size(1)):
-            attn_t = self.agva_attn(audio[:,t], video[:,t])
+            attn_t = self.agva_attn(audio[:, t], video[:, t])
             video_attn.append(attn_t)
 
         video_attn = torch.stack(video_attn, dim=1)
@@ -439,520 +613,3 @@ class PerVideoBiLSTMAGVisualAttnMultimodalClassifier(nn.Module):
             return self.out(h)
         
         return self.classifier(fusion)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# class PerVideoShallowAudioClassifier(nn.Module):
-#     def __init__(self, input_dim=128, hidden_dim=512, num_layers=1, num_classes=29):
-#         super().__init__()
-
-#         # Temporal modelling over chunks
-#         self.gru_audio = nn.GRU(input_dim, hidden_dim, num_layers, batch_first=True)
-
-#         # Classifier head
-#         self.classifier = nn.Sequential(
-#             nn.Linear(hidden_dim, 64),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(64, num_classes)
-#         )
-
-#     def forward(self, x):
-
-#         # Apply temporal modelling over T
-#         gru_out, _ = self.gru_audio(x) 
-
-#         # Apply classifier
-#         out = self.classifier(gru_out)  # (B, T, num_classes)
-        
-#         return out
-
-
-# class PerVideoShallowVideoClassifier(nn.Module):
-#     def __init__(self, input_dim=512*7*7, hidden_dim=512, num_layers=1, num_classes=29):
-#         super().__init__()
-
-#         # Temporal modelling over chunks
-#         self.gru_video = nn.GRU(input_dim, hidden_dim, num_layers, batch_first=True)
-        
-#         # Classifier head
-#         self.classifier = nn.Sequential(
-#             nn.Linear(hidden_dim, 64),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(64, num_classes)
-#         )
-
-#     def forward(self, x):
-
-#         # Extract dimensions
-#         B, T = x.size(0), x.size(1)
-
-#         # Flatten video spatial dimensions
-#         x = x.view(B, T, -1)
-
-#         # Apply temporal modelling over T
-#         gru_out, _ = self.gru_video(x)  # (batch, N, hidden_dim)
-
-#         # Apply classifier
-#         out = self.classifier(gru_out)  # (batch, N, num_classes)
-
-#         return out
-
-
-# class PerVideoShallowMultimodalClassifier(nn.Module):
-#     """
-    
-#     """
-#     def __init__(self, audio_dim=128, video_dim=512*7*7, hidden_dim=512, num_classes=29):
-#         super().__init__()
-
-#         # Temporal modelling over chunks
-#         self.gru_audio = nn.GRU(audio_dim, hidden_dim, batch_first=True)
-#         self.gru_video = nn.GRU(video_dim, hidden_dim, batch_first=True)
-        
-#         # Classifier head
-#         self.classifier = nn.Sequential(
-#             nn.Linear(hidden_dim * 2, 512),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(512, 64),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(64, num_classes)
-#         )
-
-#     def forward(self, audio, video):
-
-#         # Extract dimensions
-#         B, T = video.size(0), video.size(1)
-
-#         # Flatten video spatial dimensions
-#         video = video.view(B, T, -1)
-
-#         # Apply temporal modelling over T
-#         gru_out_audio, _ = self.gru_audio(audio)
-#         gru_out_video, _ = self.gru_video(video)
-        
-#         # Fusion with concatenation
-#         out = torch.cat([gru_out_audio, gru_out_video], dim=-1)
-
-#         # Apply classifier
-#         out = self.classifier(out)
-
-#         return out
-
-
-# class PerVideoShallowMultimodalClassifierGAP(nn.Module):
-#     """
-#     GAP variant:
-#       - Accepts video as (B, T, 512, 7, 7) or (B, T, 512).
-#       - If 5D, applies GAP over spatial dims -> (B, T, 512).
-#       - GRU for video expects 512-d inputs.
-#       - Audio path unchanged.
-#     """
-#     def __init__(self, audio_dim=128, video_dim=512, hidden_dim=512, num_classes=29):
-#         super().__init__()
-#         assert video_dim == 512, "This GAP variant is designed for video_dim=512 after spatial pooling."
-#         self.video_dim = video_dim
-
-#         # Temporal modelling over chunks
-#         self.gru_audio = nn.GRU(audio_dim, hidden_dim, batch_first=True)
-#         self.gru_video = nn.GRU(video_dim, hidden_dim, batch_first=True)
-
-#         # Classifier head
-#         self.classifier = nn.Sequential(
-#             nn.Linear(hidden_dim * 2, 512),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(512, 64),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(64, num_classes)
-#         )
-
-#     def forward(self, audio, video):
-#         # video can be (B,T,512,7,7) or (B,T,512)
-#         if video.dim() == 5:
-#             # GAP over spatial dims H,W
-#             video = video.mean(dim=(-1, -2))  # (B, T, 512)
-#         elif video.dim() == 3:
-#             # already (B, T, 512), pass-through
-#             pass
-#         else:
-#             raise ValueError(f"Unexpected video shape: {tuple(video.shape)}")
-#         #breakpoint()
-#         # Sanity check
-#         if video.size(-1) != self.video_dim:
-#             raise ValueError(f"video feature dim {video.size(-1)} != expected {self.video_dim}")
-
-#         # GRUs over time
-#         gru_out_audio, _ = self.gru_audio(audio)   # (B, T, H)
-#         gru_out_video, _ = self.gru_video(video)   # (B, T, H)
-
-#         # Late fusion (concat) per time step
-#         out = torch.cat([gru_out_audio, gru_out_video], dim=-1)  # (B, T, 2H)
-
-#         # Classifier head per time step
-#          wiout = self.classifier(out)  # (B, T, num_classes)
-#         return out
-
-
-# class PerVideoAGVisualAttMultimodalClassifier(nn.Module):
-#     def __init__(self, audio_dim=128, video_dim=512 * 7 * 7, hidden_dim=512, emb_att_dim=128, num_classes=29):
-#         super().__init__()
-
-#         # Temporal modelling over chunks
-#         self.gru_audio = nn.GRU(audio_dim, hidden_dim, batch_first=True)
-#         self.gru_video = nn.GRU(512, hidden_dim, batch_first=True)
-
-#         # Audio-guided visual attention
-#         self.agva_attn = AGVAttn(emb_att_dim=emb_att_dim, num_visual_regions=49)
-
-#         # Classifier head
-#         self.classifier = nn.Sequential(
-#             nn.Linear(hidden_dim * 2, 512),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(512, 64),
-#             nn.ReLU(),
-#             nn.Dropout(0.2),
-#             nn.Linear(64, num_classes)
-#         )
-
-#     def forward(self, audio_feats, video_feats):
-        
-#         # Apply audio guided attention
-#         video_attn = self.agva_attn(audio_feats, video_feats)
-
-#         # Process audio and video with their respective LSTMs
-#         gru_out_audio, _ = self.gru_audio(audio_feats)
-#         gru_out_video, _ = self.gru_video(video_attn)
-
-#         # Apply audio and video fusion using concatenation
-#         fusion = torch.cat((gru_out_audio, gru_out_video), dim=-1)    
-
-#         # Pass through the classifier
-#         out = self.classifier(fusion)
-
-#         return out
-
-# class AGVAttn(nn.Module):
-#     """
-#     AGVAttn: Audio-Guided Visual Attention 
-
-#     """
-
-#     def __init__(
-#             self, emb_att_dim: int = 512, num_visual_regions: int = 49, init_weights: bool = True
-#             ) -> None:
-#         super(AGVAttn, self).__init__()
-
-#         self.projection_audio = nn.Sequential(
-#                 nn.Linear(128, emb_att_dim),
-#                 nn.ReLU()
-#             )
-        
-#         self.projection_video = nn.Sequential(
-#                 nn.Linear(512, emb_att_dim),
-#                 nn.ReLU()
-#             )
-        
-#         self.fusion_audio = nn.Linear(emb_att_dim, num_visual_regions, bias=False)
-#         self.fusion_video = nn.Linear(emb_att_dim, num_visual_regions, bias=False)
-
-#         self.tanh = nn.Tanh()
-
-#         self.attn_scores = nn.Linear(num_visual_regions, 1, bias=False)
-
-#         if init_weights:
-#             torch.nn.init.xavier_uniform_(self.projection_audio[0].weight)
-#             torch.nn.init.xavier_uniform_(self.projection_video[0].weight)
-
-#             torch.nn.init.xavier_uniform_(self.fusion_audio.weight)
-#             torch.nn.init.xavier_uniform_(self.fusion_video.weight)
-#             torch.nn.init.xavier_uniform_(self.attn_scores.weight)
-
-#     def forward(self, audio, video):
-
-#         # Get duration
-#         duration = video.size(1)
-
-#         # Ignore temporal dimension
-#         audio = audio.view(-1, 128)
-#         video = video.reshape((video.size(0) * video.size(1), -1, 512))
-        
-#         # Project audio
-#         audio_proj = self.projection_audio(audio)
-#         video_proj = self.projection_video(video)
-
-#         # Fusion audio and video
-#         fusion = self.fusion_audio(audio_proj).unsqueeze(2) + self.fusion_video(video_proj)
-#         fusion = self.tanh(fusion)
-
-#         # Compute scores
-#         scores = self.attn_scores(fusion)
-#         scores = scores.squeeze()
-
-#         # Compute attention
-#         attn = F.softmax(scores, dim=-1)
-#         attn = attn.unsqueeze(1)
-
-#         # Compute audio-guided video
-#         video_attn = torch.bmm(attn, video)
-#         video_attn = video_attn.squeeze()
-#         video_attn = video_attn.view(-1, duration, 512)
-
-#         return video_attn
-
-
-
-
-
-
-
-
-# class ShallowMultimodalClassifier(nn.Module):
-#     def __init__(self, audio_dim=128, video_dim=512 * 7 * 7, num_classes=29):
-#         super().__init__()
-#         self.classifier = nn.Sequential(
-#             nn.Linear(audio_dim + video_dim, 512),
-#             nn.ReLU(),
-#             nn.Dropout(0.3),
-#             nn.Linear(512, num_classes)
-#         )
-
-#     def forward(self, audio_feat, video_feat):
-#         audio_feat = audio_feat.view(audio_feat.size(0), -1)  # (B, 128)
-#         video_feat = video_feat.view(video_feat.size(0), -1)  # (B, 25088)
-#         fused = torch.cat((audio_feat, video_feat), dim=1)    # (B, 25216)
-#         return self.classifier(fused)
-
-
-# class DummyMultimodalClassifier(nn.Module):
-#     def __init__(self):
-#         super().__init__()
-#         self.fc = nn.Linear(128 + 512, 10)
-
-#     def forward(self, audio_feat, video_feat):
-#         x = torch.cat([audio_feat.mean(dim=0), video_feat.mean(dim=0)], dim=-1)
-#         return self.fc(x.unsqueeze(0))
-
-
-# class EarlyFusionGRU(nn.Module):
-#     """
-    
-#     """
-#     def __init__(self, audio_dim=128, video_dim=512*7*7, hidden_dim=256, num_classes=29):
-#         super().__init__()
-
-#         self.gru = nn.GRU(audio_dim + video_dim, hidden_dim, batch_first=True)
-#         self.classifier = nn.Sequential(
-#             nn.ReLU(),
-#             nn.Dropout(0.3),
-#             nn.Linear(hidden_dim, num_classes)
-#         )
-
-#     def forward(self, audio, video):
-#         B, T = video.size(0), video.size(1)
-#         video = video.view(B, T, -1)
-#         x = torch.cat([audio, video], dim=-1)
-#         h, _ = self.gru(x)
-        
-#         return self.classifier(h)
-
-
-
-
-
-
-
-
-
-
-
-# class AGVAttnNet(nn.Module):
-#     """
-#     AGVAttnNet: Audio-Guided Visual Attention Network
-
-
-#     """
-#     def __init__(
-#             self, emb_dim: int, emb_att_dim: int, hidden_dim: int, num_classes: int, device: torch.device = 'cpu',
-#             init_weights: bool = True
-#             ) -> None:
-#         super(AGVAttnNet, self).__init__()
-
-#         self.device = device
-#         self.hidden_dim = hidden_dim
-
-#         # Audion-Guided Visual Attention
-#         self.agva_attn = AGVAttn(emb_att_dim=emb_att_dim, num_visual_regions=49)
-
-#         # LSTM layers for audio and video modalities
-#         self.lstm_audio = nn.LSTM(128, hidden_dim, 1, batch_first=True, bidirectional=True)
-#         self.lstm_video = nn.LSTM(512, hidden_dim, 1, batch_first=True, bidirectional=True)
-
-#         # Non-linear activation and affine transformations
-#         self.relu = nn.ReLU()
-
-#         # self.affine_v = nn.Linear(emb_att_dim, 49, bias=False)
-#         # self.affine_g = nn.Linear(emb_att_dim, 49, bias=False)
-#         # self.affine_h = nn.Linear(49, 1, bias=False)
-
-#         # Fully connected layers for classification
-#         self.L1 = nn.Linear(hidden_dim * 4, 64)
-#         self.L2 = nn.Linear(64, num_classes)
-
-#         # Initialize weights
-#         if init_weights:
-
-#             # init.xavier_uniform_(self.affine_v.weight)
-#             # init.xavier_uniform_(self.affine_g.weight)
-#             # init.xavier_uniform_(self.affine_h.weight)
-
-#             torch.nn.init.xavier_uniform_(self.L1.weight)
-#             torch.nn.init.xavier_uniform_(self.L2.weight)
-
-
-#     def forward(self, audio, video):
-        
-#         # Apply audio guided attention
-#         video_attn = self.agva_attn(audio, video)
-
-#         # Bi-LSTM for temporal modeling
-#         hidden1 = (torch.zeros(2, audio.size(0), self.hidden_dim).to(self.device),
-#                    torch.zeros(2, audio.size(0), self.hidden_dim).to(self.device))
-        
-#         hidden2 = (torch.zeros(2, video.size(0), self.hidden_dim).to(self.device),
-#                    torch.zeros(2, video.size(0), self.hidden_dim).to(self.device))
-        
-#         self.lstm_audio.flatten_parameters()    
-#         self.lstm_video.flatten_parameters()
-
-#         # Process audio and video with their respective LSTMs
-#         lstm_audio, hidden1 = self.lstm_audio(audio.view(len(audio), 10, -1), hidden1)
-#         lstm_video, hidden2 = self.lstm_video(video_attn.view(len(video), 10, -1), hidden2)
-        
-#         # Concatenate audio and video features and pass through fully connected layers
-#         output = torch.cat((lstm_audio, lstm_video), -1)
-#         output = self.relu(output)
-#         out = self.L1(output)
-#         out = self.relu(out)
-#         out = self.L2(out)
-        
-#         #out = F.softmax(out, dim=-1)
-
-#         return out
-    
-# class att_Net(nn.Module):
-#     '''
-#     Audio-visual event localization with audio-guided visual attention and audio-visual fusion.
-#     '''
-#     def __init__(self, emb_dim, hidden_dim, hidden_size, tagset_size, device):
-#         super(att_Net, self).__init__()
-
-#         # Keep track
-#         self.hidden_dim = hidden_dim
-#         self.device = device
-        
-#         # LSTM layers for audio and video modalities
-#         self.lstm_audio = nn.LSTM(128, hidden_dim, 1, batch_first=True, bidirectional=True)
-#         self.lstm_video = nn.LSTM(512, hidden_dim, 1, batch_first=True, bidirectional=True)
-
-#         # Non-linear activation and affine transformations
-#         self.relu = nn.ReLU()
-#         self.affine_audio = nn.Linear(128, hidden_size)
-#         self.affine_video = nn.Linear(512, hidden_size)
-#         self.affine_v = nn.Linear(hidden_size, 49, bias=False)
-#         self.affine_g = nn.Linear(hidden_size, 49, bias=False)
-#         self.affine_h = nn.Linear(49, 1, bias=False)
-
-#         # Fully connected layers for classification
-#         self.L1 = nn.Linear(hidden_dim * 4, 64)
-#         self.L2 = nn.Linear(64, tagset_size)
-
-#         # Initialize weights
-#         self.init_weights()
-
-#     def init_weights(self):
-#         """Initialize the weights."""
-#         torch.nn.init.xavier_uniform_(self.affine_v.weight)
-#         torch.nn.init.xavier_uniform_(self.affine_g.weight)
-#         torch.nn.init.xavier_uniform_(self.affine_h.weight)
-#         torch.nn.init.xavier_uniform_(self.L1.weight)
-#         torch.nn.init.xavier_uniform_(self.L2.weight)
-#         torch.nn.init.xavier_uniform_(self.affine_audio.weight)
-#         torch.nn.init.xavier_uniform_(self.affine_video.weight)
-
-#     def forward(self, audio, video):
-#         # Prepare the video data
-#         v_t = video.view(video.size(0) * video.size(1), -1, 512)
-#         V = v_t
-
-#         # Audio-guided visual attention
-#         v_t = self.relu(self.affine_video(v_t))
-#         a_t = audio.view(-1, audio.size(-1))
-#         a_t = self.relu(self.affine_audio(a_t))
-
-#         # Fusion of audio and visual features
-#         content_v = self.affine_v(v_t) + self.affine_g(a_t).unsqueeze(2)
-#         z_t = self.affine_h(F.tanh(content_v)).squeeze(2)
-
-#         # Attention
-#         alpha_t = F.softmax(z_t, dim=-1).view(z_t.size(0), -1, z_t.size(1))
-#         c_t = torch.bmm(alpha_t, V).view(-1, 512)
-#         video_t = c_t.view(video.size(0), -1, 512)
-
-#         # Bi-LSTM for temporal modeling
-#         hidden1 = (torch.zeros(2, audio.size(0), self.hidden_dim).to(self.device),
-#                     torch.zeros(2, audio.size(0), self.hidden_dim).to(self.device))
-        
-#         hidden2 = (torch.zeros(2, video.size(0), self.hidden_dim).to(self.device),
-#                     torch.zeros(2, video.size(0), self.hidden_dim).to(self.device))
-        
-#         self.lstm_audio.flatten_parameters()    
-#         self.lstm_video.flatten_parameters()
-
-#         # Process audio and video with their respective LSTMs
-#         lstm_audio, hidden1 = self.lstm_audio(audio.view(len(audio), 10, -1), hidden1)
-#         lstm_video, hidden2 = self.lstm_video(video_t.view(len(video), 10, -1), hidden2)
-        
-#         # Concatenate audio and video features and pass through fully connected layers
-#         output = torch.cat((lstm_audio, lstm_video), -1)
-#         output = self.relu(output)
-#         out = self.L1(output)
-#         out = self.relu(out)
-#         out = self.L2(out)
-        
-#         #out = F.softmax(out, dim=-1)
-#         #breakpoint()
-
-#         return out
