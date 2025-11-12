@@ -1,7 +1,7 @@
 # src/models.py
 
 """
-Neural network models for multimodal audio-visual video classification.
+Neural network models for multimodal audio-visual event localization (AVEL).
 
 This module defines configurable BiLSTM-based classifiers for audio, video, and
 multimodal fusion tasks, featuring several classifier head styles including base,
@@ -56,7 +56,6 @@ class _ResidualBlock(nn.Module):
         dropout_p (float): Dropout probability.
         activation (str): Activation function name ('gelu' or others default to ReLU).
     """
-
     def __init__(self, dim: int, dropout_p=0.2, activation="gelu"):
         super().__init__()
         self.fc1 = nn.Linear(dim, dim)
@@ -94,7 +93,6 @@ class PerVideoBiLSTMAudioClassifier(nn.Module):
         dropout_p (float): Dropout probability for classification head.
         activation (str): Activation function name ('relu' or 'gelu').
     """
-
     def __init__(self, input_dim=128, num_classes=29, style="base", hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()
@@ -180,7 +178,6 @@ class PerVideoBiLSTMVideoClassifier(nn.Module):
         dropout_p (float): Dropout probability.
         activation (str): Activation function name.
     """
-
     def __init__(self, input_dim=512, num_classes=29, style="base", hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()
@@ -270,7 +267,6 @@ class PerVideoBiLSTMMultimodalClassifier(nn.Module):
         dropout_p (float): Dropout probability.
         activation (str): Activation function name.
     """
-
     def __init__(self, audio_dim=128, video_dim=512, num_classes=29, style="base", hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()
@@ -391,7 +387,6 @@ class AGVAttn(nn.Module):
         debug (bool): Enables debug outputs of attention maps.
         dropout_p (float): Dropout rate applied to projections.
     """
-
     def __init__(self, emb_att_dim=512, num_visual_regions=49, temperature=1.0, init_weights=False, debug=False, dropout_p=0.2):
         super().__init__()
         self.temperature = temperature
@@ -505,7 +500,6 @@ class PerVideoBiLSTMAGVisualAttnMultimodalClassifier(nn.Module):
         dropout_p (float): Dropout rate.
         activation (str): Activation function name.
     """
-
     def __init__(self, audio_dim=128, video_dim=512, emb_att_dim=128, num_classes=29, style="base", debug=False, temperature=1.0, hidden_dim=512, num_layers=1, dropout_p=0.3, activation="relu"):
         super().__init__()
         style = style.lower()

@@ -14,12 +14,14 @@ This module provides:
 @date 2025-11-11
 """
 
+import random
+
 import torch
 import numpy as np
 
-import ast
+from typing import List
 
-import random 
+import ast
 
 from src.vggish_input import waveform_to_examples
 
@@ -44,7 +46,7 @@ def set_seed(seed: int = 42) -> None:
             pass
 
 
-def subset_accuracy_from_label_lists(true_label_lists, predicted_label_lists) -> float:
+def subset_accuracy_from_label_lists(true_label_lists: List[List[int]], predicted_label_lists: List[List[int]]) -> float:
     """
     Computes exact subset match accuracy between true and predicted multilabel sets.
 
@@ -62,7 +64,7 @@ def subset_accuracy_from_label_lists(true_label_lists, predicted_label_lists) ->
     return accs
 
 
-def hamming_accuracy_from_label_lists(true_label_lists, predicted_label_lists) -> float:
+def hamming_accuracy_from_label_lists(true_label_lists: List[List[int]], predicted_label_lists: List[List[int]]) -> float:
     """
     Computes average Hamming accuracy across multilabel examples.
 
@@ -134,13 +136,13 @@ def compute_pos_weight(dataset, num_classes: int = 29, device: str = 'cpu') -> t
     return pos_weight_tensor
 
 
-def extract_fallback_audio_token_emb(pipeline, sample_rate=16000, token_duration=1.0, device='cpu'):
+def extract_fallback_audio_token_emb(pipeline: torch.nn.Module, sampling_rate: int = 16000, token_duration: float = 1.0, device='cpu'):
     """
     Extract a fallback audio token embedding from silent audio for fallback use.
 
     Args:
         pipeline (torch.nn.Module): Audio feature extraction pipeline.
-        sample_rate (int, optional): Audio sample rate in Hz. Defaults to 16000.
+        sampling_rate (int, optional): Audio sample rate in Hz. Defaults to 16000.
         token_duration (float, optional): Token duration in seconds. Defaults to 1.0.
         device (torch.device or str, optional): Device for tensor operations. Defaults to 'cpu'.
 
@@ -149,13 +151,13 @@ def extract_fallback_audio_token_emb(pipeline, sample_rate=16000, token_duration
     """
     
     # Calculate expected length
-    expected_len = int(token_duration * sample_rate)
+    expected_len = int(token_duration * sampling_rate)
 
     # Generate a silent waveform
     waveform = np.zeros(expected_len)
 
     # Extract mel-spectrogram example from this silent waveform
-    spectrogram = waveform_to_examples(data=waveform, sample_rate=sample_rate, return_tensor=False)
+    spectrogram = waveform_to_examples(data=waveform, sampling_rate=sampling_rate, return_tensor=False)
 
     # Convert to tensor and send to device
     spectrogram = torch.tensor(spectrogram, device=device, dtype=torch.float32)

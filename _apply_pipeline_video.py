@@ -22,7 +22,7 @@ Main Components:
 
 Outputs:
     - HDF5 datasets containing:
-        * Raw preprocessed video frames per token (commented out because consume too much disk space).
+        * Raw preprocessed video frames per token (NOTE: commented out because consume too much disk space).
         * Extracted convolutional features.
         * Temporal GPA features.
         * Spatial GPA features.

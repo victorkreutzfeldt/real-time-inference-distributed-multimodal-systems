@@ -22,7 +22,7 @@ Main Components:
 
 Outputs:
     - HDF5 files containing processed data saved at configured paths:
-        * Raw audio waveforms (commented out because consume too much disk space).
+        * Raw audio waveforms (NOTE: commented out because consume too much disk space).
         * Spectrograms for each token.
         * Extracted features and spatially pooled features.
         * Audio embeddings and PCA-processed embeddings.

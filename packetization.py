@@ -123,23 +123,23 @@ def load_audio_packets(wav_path: str, window_size: int = AUDIO_WINDOW_SIZE, targ
         target_packets (int): Desired number of packets.
 
     Returns:
-        tuple: (packets np.ndarray [target_packets, window_size], sampling rate int).
+        packets (np.ndarray): Array of packets of shape [target_packets, window_size].
     """
-    sr, data = scipy.io.wavfile.read(wav_path)
-    if data.dtype == np.int16:
-        data = data.astype(np.float32) / 32768.0
+    sr, waveform = scipy.io.wavfile.read(wav_path)
+    if waveform.dtype == np.int16:
+        waveform = waveform.astype(np.float32) / 32768.0
 
     total_samples = window_size * target_packets
     assert sr == TARGET_SAMPLING_RATE_AUDIO, f"Expected {TARGET_SAMPLING_RATE_AUDIO}, got {sr}."
-    assert data.ndim == 1, f"Expected mono audio, got {data.ndim} channels."
+    assert waveform.ndim == 1, f"Expected mono audio, got {waveform.ndim} channels."
 
-    if len(data) < total_samples:
-        data = np.pad(data, (0, total_samples - len(data)), mode='constant')
+    if len(waveform) < total_samples:
+        waveform = np.pad(waveform, (0, total_samples - len(waveform)), mode='constant')
     else:
-        data = data[:total_samples]
+        waveform = waveform[:total_samples]
 
-    packets = data.reshape((target_packets, window_size))
-    return packets, sr
+    packets = waveform.reshape((target_packets, window_size))
+    return packets
 
 
 def save_audio_packets(audio_packets: np.ndarray, save_dir: str, video_id: str) -> List[Packet]:
@@ -267,7 +267,7 @@ def process_single_video(video_id: str, video_h5: h5py.File) -> Tuple[int, int]:
     extract_audio_ffmpeg(input_file, tmp_audio_wav)
     extract_video_frames_ffmpeg(input_file, tmp_video_dir)
 
-    audio_packets, _ = load_audio_packets(tmp_audio_wav)
+    audio_packets = load_audio_packets(tmp_audio_wav)
     audio_packet_objs = save_audio_packets(audio_packets, OUTPUT_PATH, video_id)
     video_packet_objs = save_video_packets(tmp_video_dir, OUTPUT_PATH, video_id, video_h5=video_h5)
 

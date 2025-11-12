@@ -20,7 +20,7 @@ from src.packets import TransmittedPacket
 
 def rate(snr_dB: float, bandwidth: float, outage_proba: float) -> float:
     """
-    Compute the achievable rate using the erasure channel model specified in the paper.
+    Compute the achievable rate using an erasure channel model, as specified in the paper.
 
     Args:
         snr_dB (float): Signal-to-noise ratio in dB.
@@ -45,7 +45,7 @@ def simulate_transmission(stream: List[TransmittedPacket], config: dict, modalit
 
     Args:
         stream (List[TransmittedPacket]): List of packets to be transmitted.
-        config (dict): Configuration dictionary containing channel parameters.
+        config (dict): Configuration dictionary containing channel parameters per modality.
         modality (str): 'audio' or 'video' to select the appropriate channel parameters.
   
     Returns:
@@ -63,7 +63,7 @@ def simulate_transmission(stream: List[TransmittedPacket], config: dict, modalit
     bandwidth = config['modalities'][modality]['bandwidth']
     outage_proba = config['modalities'][modality]['outage_proba']
 
-    # Compute achievable rate
+    # Compute the achievable rate
     bandwidth_bps = rate(snr_dB, bandwidth, outage_proba)
 
     # Iterate over packets and simulate transmission

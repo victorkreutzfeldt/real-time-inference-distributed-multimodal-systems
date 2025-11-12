@@ -4,8 +4,8 @@
 This module defines custom PyTorch Dataset classes for loading multimodal video data.
 
 Classes:
-- PerVideoMultimodalDataset: Loads tokenized audio and video embeddings along with multilabel annotations.
-- PerVideoMultimodalDatasetLabels: Loads only token-wise multilabel annotations without any feature data.
+    - PerVideoMultimodalDataset: Loads tokenized audio and video embeddings along with multilabel annotations.
+    - PerVideoMultimodalDatasetLabels: Loads only token-wise multilabel annotations without any embeddings.
 
 These datasets handle reading data from HDF5 files and CSV annotations, supporting flexible
 modalities ('audio', 'video', 'multimodal') and providing easy-to-use interfaces for training
@@ -35,11 +35,10 @@ class PerVideoMultimodalDataset(Dataset):
         audio_h5_path (str): Filepath for audio embeddings stored in HDF5 format.
         video_h5_path (str): Filepath for video embeddings stored in HDF5 format.
         split (str): Data split to load ('train', 'val', 'test').
-        num_tokens (int): Number of tokens per video sample.
+        num_tokens (int): Number of tokens per video input.
         num_classes (int): Total number of label classes including background.
         modality (str): One of 'audio', 'video', 'multimodal' specifying modalities to load.
     """
-    
     def __init__(self, 
                  annotations_file: str = 'data/annotations.csv',
                  audio_h5_path: str = 'data/classification/embeddings/audio.h5',
@@ -48,7 +47,6 @@ class PerVideoMultimodalDataset(Dataset):
                  num_tokens: int = 10,
                  num_classes: int = 29,
                  modality: str = 'multimodal') -> None:
-
         self.num_tokens = num_tokens
         self.num_classes = num_classes
         self.modality = modality
@@ -70,7 +68,7 @@ class PerVideoMultimodalDataset(Dataset):
 
         # Unique video IDs in this split
         self.video_ids = self.annotations['video_id'].unique()
-
+        
     def __len__(self) -> int:
         """
         Returns:
@@ -83,33 +81,34 @@ class PerVideoMultimodalDataset(Dataset):
         Retrieve modalities and multilabel token annotations for a single video by index.
 
         Args:
-            idx (int): Index of the video sample.
+            idx (int): Index of the video input.
 
         Returns:
-            dict: Sample dictionary with keys:
+            dict: Input dictionary with keys:
                 - 'video_id' (str): Video identifier.
                 - 'audio' (torch.FloatTensor): Audio embeddings if modality includes 'audio', shape (num_tokens, feature_dim).
                 - 'video' (torch.FloatTensor): Video embeddings if modality includes 'video', shape (num_tokens, feature_dim).
                 - 'labels' (torch.FloatTensor): Multi-hot encoded labels per token, shape (num_tokens, num_classes).
 
         Raises:
-            AssertionError: If annotation tokens count does not match `num_tokens`.
+            AssertionError: If annotation tokens count does not match 'num_tokens'.
         """
         # Get video ID for this index
         video_id = self.video_ids[idx]
         
-        sample = {
+        # Prepare to output an input
+        input = {
             'video_id': video_id
         }
 
-        # Prepare lists to hold samples
+        # Prepare lists to hold inputs
         if self.modality in ('audio', 'multimodal'):
             audio = torch.tensor(self.audio_h5[video_id][0:self.num_tokens][()], dtype=torch.float32)
-            sample['audio'] = audio 
+            input['audio'] = audio 
 
         if self.modality in ('video', 'multimodal'):   
             video = torch.tensor(self.video_h5[video_id][0:self.num_tokens][()], dtype=torch.float32) 
-            sample['video'] = video
+            input['video'] = video
 
         # Filter annotations for this video
         video_anns = self.annotations[self.annotations['video_id'] == video_id][self.label_column].reset_index(drop=True)
@@ -131,9 +130,9 @@ class PerVideoMultimodalDataset(Dataset):
             for lbl_idx in labels_this_token_list:
                 token_labels[token_idx, lbl_idx] = 1.0
                 
-        sample['labels'] = token_labels  # (num_tokens, num_classes)
+        input['labels'] = token_labels  # (num_tokens, num_classes)
 
-        return sample
+        return input
     
     def close(self) -> None:
         """
@@ -145,17 +144,16 @@ class PerVideoMultimodalDataset(Dataset):
 
 class PerVideoMultimodalDatasetLabels(Dataset):
     """
-    Dataset class for loading token-wise multi-label annotations without feature data.
+    Dataset class for loading token-wise multi-label annotations without embeddings.
 
     Useful for scenarios where only ground-truth labels are required.
 
     Args:
         annotations_file (str): Path to CSV with token-level annotations.
         split (str): Desired data split - 'train', 'val', 'test'.
-        num_tokens (int): Number of tokens per video sample.
+        num_tokens (int): Number of tokens per video input.
         num_classes (int): Number of label classes including background.
     """
-
     def __init__(self, 
                  annotations_file='data/annotations.csv',
                  split='train',
@@ -187,10 +185,10 @@ class PerVideoMultimodalDatasetLabels(Dataset):
         Retrieve multi-hot label annotations for all tokens of a video.
 
         Args:
-            idx (int): Index of the video sample.
+            idx (int): Index of the video input.
 
         Returns:
-            dict: Sample dictionary containing:
+            dict: Input dictionary containing:
                 - 'video_id' (str): Video identifier.
                 - 'labels' (torch.FloatTensor): Multi-hot label tensor per token, shape (num_tokens, num_classes).
 

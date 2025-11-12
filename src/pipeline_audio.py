@@ -39,7 +39,6 @@ class VGGAudio(nn.Module):
     Args:
         features (nn.Module): Feature extraction backbone (e.g., CNN layers).
     """
-
     def __init__(self, features: nn.Module):
         super(VGGAudio, self).__init__()
         self.features = features
@@ -108,7 +107,6 @@ class PostprocessorAudio(nn.Module):
     in the same format for a large set of YouTube videos. This class implements
     the same PCA (with whitening) and quantization transformations."
     """
-
     def __init__(self):
         """
         Initializes PCA matrices and parameters as non-trainable parameters.
@@ -216,7 +214,6 @@ class AudioPipeline(nn.Module):
         postprocess (bool): Whether to apply PCA whitening and quantization postprocessing.
         progress (bool): Show download progress when loading pretrained weights.
     """
-
     def __init__(self, pretrained: bool = True, device: torch.device = None, preprocess: bool = False, postprocess: bool = False, progress: bool = True):
         super().__init__()
 

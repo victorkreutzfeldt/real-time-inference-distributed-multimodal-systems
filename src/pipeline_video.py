@@ -36,7 +36,6 @@ class VGGVideo(nn.Module):
     The embeddings are produced by flattening the convolutional output and passing through
     fully connected layers with ReLU activation.
     """
-
     def __init__(self):
         """
         Initializes the model by loading pretrained VGG19 layers and defining embedding layers.
@@ -120,7 +119,6 @@ class VideoPipeline(VGGVideo):
         postprocess (bool): Whether to apply postprocessing on embeddings (currently TODO).
         progress (bool): Show progress bar when downloading pretrained weights.
     """
-
     def __init__(self, pretrained: bool = True, device: torch.device = None, preprocess: bool = False, postprocess: bool = False, progress: bool = True):
         super().__init__()
 

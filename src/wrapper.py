@@ -21,7 +21,6 @@ Key features:
 import torch
 import numpy as np
 
-from fractions import Fraction
 from collections import deque
 
 from src.vggish_input import waveform_to_examples
@@ -45,7 +44,6 @@ class Wrapper:
         - PTS timebases correspond to each modality's sampling rate.
         - Missing or not-yet-received data is zero-imputed to maintain continuous temporal processing.
     """
-
     def __init__(self, config, model, pipelines, labels, received_streams, fallbacks, device) -> None:
         """
         Initialize the wrapper engine.
@@ -111,7 +109,6 @@ class Wrapper:
             'num_missed_pkts': {m: None for m in config['modalities'].keys()},
             'num_twis': None
         }
-
 
     def run_inference(self) -> dict:
         """
@@ -227,10 +224,9 @@ class Wrapper:
 
         return self.results
 
-
     def update_tokens_from_packet_buffer(self, modality) -> None:
         """
-        Tokenize samples from packets of a modality, pads incomplete tokens,
+        Tokenize samples from packets of a modality, pads incomplete tokens (zero-imputation),
         and updates token availability and completion flags.
 
         Args:
@@ -309,7 +305,6 @@ class Wrapper:
             token_entry['available'] = True
             token_entry['completed'] = completed
 
-
     def streaming_pipeline(self, modality) -> None:
         """
         Process available tokens of a modality through the streaming feature extraction pipeline.
@@ -378,7 +373,6 @@ class Wrapper:
                 if token_entry['completed']:
                     token_entry['done'] = True
 
-
     def clear_packet_buffer(self, modality) -> None:
         """
         Remove packets from the packet buffer belonging to tokens that have been completed.
@@ -415,7 +409,6 @@ class Wrapper:
 
         self.state[modality]['packet_buffer'] = new_packet_buffer
 
-
     def get_embeddings(self) -> dict:
         """
         Collect embeddings for all tokens across all modalities into tensors for inference.
@@ -442,7 +435,6 @@ class Wrapper:
             embeddings[modality] = torch.stack(emb_list, dim=0)
 
         return embeddings
-    
 
     def compute_num_missed_packets(self):
         """
