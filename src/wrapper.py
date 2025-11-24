@@ -14,17 +14,16 @@ Key features:
     - Tracks per-token processing status and accumulates accuracy metrics in real-time.
     - Supports incremental batch processing within time windows defined by the TWI model.
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
+from collections import deque
+from fractions import Fraction
 
 import torch
 import numpy as np
 
-from collections import deque
-
 from src.vggish_input import waveform_to_examples
-
 from src.utils import hamming_accuracy_from_label_lists, subset_accuracy_from_label_lists
 
 
@@ -336,7 +335,7 @@ class Wrapper:
 
             # Convert all raw samples to spectrograms in a list
             spectrograms = [
-                waveform_to_examples(data=samples, sample_rate=sampling_rate, return_tensor=False)
+                waveform_to_examples(data=samples, sampling_rate=sampling_rate, return_tensor=False)
                 for _, samples in tokens_to_process
             ]
 

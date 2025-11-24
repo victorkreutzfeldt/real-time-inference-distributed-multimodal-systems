@@ -7,15 +7,16 @@ Provides functions such as `rate` to compute achievable bit rates given channel 
 `simulate_transmission` to emulate sequential packet transmission over lossy channels by updating 
 packet delays and arrival times.
 
-Author: Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 Date: 2025-11-11
 """
 
+from typing import List
+from fractions import Fraction
+
 import numpy as np
 
-from typing import List
-
-from src.packets import TransmittedPacket
+from src.packetization import Packet
 
 
 def rate(snr_dB: float, bandwidth: float, outage_proba: float) -> float:
@@ -38,25 +39,25 @@ def rate(snr_dB: float, bandwidth: float, outage_proba: float) -> float:
     return rate
 
 
-def simulate_transmission(stream: List[TransmittedPacket], config: dict, modality: str) -> List[TransmittedPacket]:
+def simulate_transmission(stream: List[Packet], config: dict, modality: str) -> List[Packet]:
     """
     Simulate the transmission of packets over a channel with given bandwidth and outage probability. 
     Packets are transmitted sequentially, and their arrival times are computed based on their sizes and the channel conditions.
 
     Args:
-        stream (List[TransmittedPacket]): List of packets to be transmitted.
+        stream (List[Packet]): List of packets to be transmitted.
         config (dict): Configuration dictionary containing channel parameters per modality.
         modality (str): 'audio' or 'video' to select the appropriate channel parameters.
   
     Returns:
-        List[TransmittedPacket]: List of packets with updated transmission delays and arrival times.
+        List[Packet]: List of packets with updated transmission delays and arrival times.
     """
 
     # List to store received packets
     received = []
 
     # Initialize last arrival time
-    last_arrival_time = 0.0
+    last_arrival_time = Fraction(0, 1)
 
     # Extract parameters from config
     snr_dB = config['modalities'][modality]['snr_dB']
@@ -66,11 +67,16 @@ def simulate_transmission(stream: List[TransmittedPacket], config: dict, modalit
     # Compute the achievable rate
     bandwidth_bps = rate(snr_dB, bandwidth, outage_proba)
 
+    # Convert bandwidth_bps and outage_proba to Fractions if they are floats
+    bandwidth_bps_frac = Fraction.from_float(bandwidth_bps).limit_denominator() if isinstance(bandwidth_bps, float) else bandwidth_bps
+    outage_proba_frac = Fraction.from_float(outage_proba).limit_denominator() if isinstance(outage_proba, float) else outage_proba
+
     # Iterate over packets and simulate transmission
     for pkt in stream:
        
-        # Compute and store transmission delay based on average statistics
-        tx_delay = (pkt.size_bits / float(bandwidth_bps)) / (1 - outage_proba)
+        # Compute and store transmission delay as Fraction
+        size_bits_frac = Fraction(pkt.size_bits, 1)
+        tx_delay = size_bits_frac / bandwidth_bps_frac / (1 - outage_proba_frac)
         pkt.tx_delay = tx_delay
 
         # Compute and store arrival time (cumulative)
@@ -84,5 +90,5 @@ def simulate_transmission(stream: List[TransmittedPacket], config: dict, modalit
 
     # Sort by arrival time (None at the end)
     received = sorted(received, key=lambda p: (p.arrival_time is None, p.arrival_time))
-
+    
     return received 

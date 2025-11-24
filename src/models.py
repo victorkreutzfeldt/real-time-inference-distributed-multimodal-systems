@@ -19,15 +19,15 @@ Key components:
 Design permits flexible architecture and activation choices for experimentation
 with multimodal sequential video classification in a real-time distributed inference framework.
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
+
+from typing import Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from typing import Tuple, Union
 
 
 def _act(name: str) -> nn.Module:

@@ -26,7 +26,7 @@ Usage:
     e.g.:
     python plot_accuracy_comparison.py --audio_snr_dB 1.1888
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
 

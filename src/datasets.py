@@ -11,14 +11,13 @@ These datasets handle reading data from HDF5 files and CSV annotations, supporti
 modalities ('audio', 'video', 'multimodal') and providing easy-to-use interfaces for training
 or evaluating multimodal video models.
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
 
 import ast
-
 import h5py
-import numpy as np
+
 import pandas as pd
 import torch
 from torch.utils.data import Dataset

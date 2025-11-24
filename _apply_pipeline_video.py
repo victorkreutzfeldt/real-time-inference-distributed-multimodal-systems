@@ -33,7 +33,7 @@ Usage:
     Simply run:
     python _apply_pipeline_video.py
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
 

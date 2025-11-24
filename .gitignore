@@ -1,8 +1,9 @@
-data/_tmp_audio
-data/_tmp_video
+data/_tmp
 data/AVE
 data/AVE_trimmed
-data/classification
+data/representations
 data/raw
 data/packets
+src/config.py
 realtime
+src/__pycache__

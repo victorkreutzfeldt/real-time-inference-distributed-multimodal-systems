@@ -32,7 +32,7 @@ Usage:
     Simply run:
     python _apply_pipeline_audio.py
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
 
@@ -47,9 +47,7 @@ import h5py
 from tqdm import tqdm
 
 from src.vggish_input import waveform_to_examples
-
 from src.pipeline_audio import AudioPipeline
-
 from src.utils import set_seed
 
 

@@ -29,39 +29,29 @@ Usage:
     Run the script specifying wrapper variant and audio SNR, e.g.:
     python run_wrapper.py --variant PaMo --audio_snr_dB 1.1888
 
-Author: Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 Date: 2025-11-11
 """
 
-
-
+import argparse
 import gzip
 import os
 import pickle
-from typing import List
 from collections import deque
+from fractions import Fraction
 
 import numpy as np
-import pandas as pd
 import torch
 from tqdm import tqdm
 
-from fractions import Fraction
-
 from src.datasets import PerVideoMultimodalDatasetLabels
-
+from src.models import PerVideoBiLSTMMultimodalClassifier
+from src.packetization import load_packets
 from src.pipeline_audio import AudioPipeline
 from src.pipeline_video import VideoPipeline
-from src.models import PerVideoBiLSTMMultimodalClassifier
-
-from src.packets import load_packets
 from src.communication import simulate_transmission
-
-from src.wrapper import Wrapper
-
 from src.utils import extract_fallback_audio_token_emb
-
-import argparse
+from src.wrapper import Wrapper
 
 
 parser = argparse.ArgumentParser(
@@ -173,13 +163,9 @@ def get_config(variant: str, audio_snr_dB: str) -> dict:
     if variant == 'SotA':
         twi_duration = stop_time 
 
-    # Round to 4 decimal places
-    stop_time = float((np.ceil(stop_time * 10000) / 10000).item())
-    twi_duration = float((np.ceil(twi_duration * 10000) / 10000).item())
-
-    # Save in config
-    config['global']['twi_duration'] = twi_duration
-    config['global']['stop_time'] = stop_time
+    # Save in config as fractions
+    config['global']['twi_duration'] = Fraction(twi_duration).limit_denominator()
+    config['global']['stop_time'] = Fraction(stop_time).limit_denominator()
 
     # Get device
     config['device'] = (
@@ -239,7 +225,7 @@ def main(variant: str, audio_snr_dB: str) -> dict:
     # Fallback embedding for missing audio token
     fallback_audio_token_emb = extract_fallback_audio_token_emb(
         pipeline=pipeline_audio,
-        sample_rate=config['modalities']['audio']['sampling_rate'],
+        sampling_rate=config['modalities']['audio']['sampling_rate'],
         token_duration=config['global']['token_duration'],
         device=config['device']
     )
@@ -269,13 +255,13 @@ def main(variant: str, audio_snr_dB: str) -> dict:
     for idx, video_id in tqdm(enumerate(test_ds.video_ids), total=len(test_ds.video_ids), desc=f"Wrapper: {variant}", ascii=True):
         
         # Load packets
-        stream_audio = load_packets('audio', f"data/packets/audio/{video_id}.pkl.gz")
-        stream_video = load_packets('video', f"data/packets/video/{video_id}.pkl.gz")
-
+        stream_audio = load_packets(f"data/packets/audio/{video_id}.pkl.gz")
+        stream_video = load_packets(f"data/packets/video/{video_id}.pkl.gz")
+       
         # Simulate transmission
         received_audio = simulate_transmission(stream_audio, config, modality='audio')
         received_video = simulate_transmission(stream_video, config, modality='video')
-
+        
         received_streams = {
             'audio': deque(received_audio),
             'video': deque(received_video)

@@ -23,7 +23,7 @@ Usage:
     Run with appropriate command line args, e.g.:
     python train_per_video.py --modality multimodal --style base --train
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
 
@@ -31,20 +31,17 @@ import os
 import argparse
 import logging
 import datetime
-import pandas as pd
 
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
-
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-
 import matplotlib.pyplot as plt
 
 from src.datasets import PerVideoMultimodalDataset
-
 from src.models import (
     PerVideoBiLSTMAudioClassifier,
     PerVideoBiLSTMVideoClassifier,

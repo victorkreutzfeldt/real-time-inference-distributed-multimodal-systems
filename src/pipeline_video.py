@@ -12,12 +12,11 @@ Key components:
     - VideoPipeline: Integration of VGGVideo with optional preprocessing (normalization)
     and postprocessing steps, supporting device selection and pretrained weights.
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
 
 import numpy as np
-
 import torch
 import torch.nn as nn
 from torch import hub

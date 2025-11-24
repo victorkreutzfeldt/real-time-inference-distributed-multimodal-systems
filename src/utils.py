@@ -10,18 +10,16 @@ This module provides:
     - Computation of positive class weights to handle class imbalance.
     - Extraction of fallback audio embeddings from silent audio used in robustness scenarios.
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 """
 
 import random
+import ast
+from typing import List
 
 import torch
 import numpy as np
-
-from typing import List
-
-import ast
 
 from src.vggish_input import waveform_to_examples
 
@@ -170,3 +168,4 @@ def extract_fallback_audio_token_emb(pipeline: torch.nn.Module, sampling_rate: i
     emb = emb.cpu().numpy().astype(np.float32).squeeze()
 
     return emb
+

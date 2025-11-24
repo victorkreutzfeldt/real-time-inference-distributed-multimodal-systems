@@ -13,7 +13,7 @@ Key components:
     - AudioPipeline: High-level pipeline wrapping VGGAudio with optional preprocessing
     (waveform to examples) and postprocessing steps, supporting pretrained weights.
 
-@author Victor Kreutzfeldt (@victorkreutzfelt or @victorcroisfelt)
+@author Victor Kreützfeldt (@victorkreutzfeldt)
 @date 2025-11-11
 
 Notes:
@@ -21,7 +21,6 @@ Notes:
 """
 
 import numpy as np
-
 import torch
 import torch.nn as nn
 from torch import hub
