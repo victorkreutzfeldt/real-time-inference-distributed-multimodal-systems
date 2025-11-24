@@ -11,8 +11,6 @@ This is a research-oriented code package that is primarily intended to allow rea
 
 V. Croisfelt, J. H. Inacio de Souza, S. R. Pandey, B. Soret, and P. Popovski, **“Real-Time Inference for Distributed Multimodal Systems under Communication Delay Uncertainty,”** submitted to ICC 2026.
 
-<!-- A pre-print version is available on arXiv: [https://arxiv.org/abs/2304.10858](https://arxiv.org/abs/2404.14236). -->
-
 We hope this content helps in your research and contributes to building the precepts behind open science. Remarkably, to boost the idea of open science and further drive the evolution of science, we also motivate you to share your published results with the public.
 
 If you have any questions or if you have encountered any inconsistencies, please do not hesitate to contact me via victorcroisfelt@gmail.com.
@@ -24,15 +22,17 @@ Connected cyber-physical systems perform inference based on real-time inputs fro
 
 ```
 real-time-inference-distributed-multimodal-systems/
-├── data/                       # Directory where all types of data are stored
-├── models/                     # Directory for saving trained models
-├── src/                        # Source code directory
-├── _apply_class_pipeline_audio.py   # Applies audio pipeline over video observations to extract auditory features and embeddings
-├── _apply_class_pipeline_video.py   # Applies video pipeline over video observations to extract visual features
-├── _train.py                  # Trains the baseline model for the AVEL task using extracted auditory embeddings and visual features
-├── packetization.py           # Packetizes each video observation into separate auditory and visual streams
-├── plotting_per_snr.py        # Plots the performance curves reported in the paper for each SNR value
-└── wrapper.py                 # Simulates the wrapper operation under packet delay conditions
+├── data/                        # Directory where all types of data are stored
+├── models/                      # Directory for saving trained models
+├── src/                         # Source code directory
+├── _apply_pipeline_audio.py     # Applies audio pipeline over video observations to extract auditory features and embeddings
+├── _apply_pipeline_video.py     # Applies video pipeline over video observations to extract visual features
+├── _train.py                    # Trains the baseline model for the AVEL task using extracted auditory embeddings and visual features
+├── packetize.py                 # Packetizes each video observation into separate auditory and visual streams
+├── plot_all.sh                  # Plots all the performance curves (run it after run_all.sh)
+├── plotting_per_audio_snr.py    # Plots the performance curves reported in the paper for each SNR value
+├── run_all.sh                   # Runs all simulations of the wrapper operation
+└── run_wrapper.py               # Simulates the wrapper operation under packet delay conditions
 ```
 
 ## 🛠️ Installation
@@ -79,16 +79,16 @@ Generates the corresponding annotation files required for training and evaluatio
 With the dataset prepared (`data/AVE_trimmed`) and annotations generated, you can train the baseline model for the fully-supervised Audio-Visual Event Localization (AVEL) task, based on the implementation from [Yapeng Tian's AVE-ECCV18 repository](https://github.com/YapengTian/AVE-ECCV18). Run the following in order:
 
 ```bash
-python _apply_class_pipeline_audio.py
+python _apply_pipeline_audio.py
 ```
 Applies the auditory pipeline to extract audio features and embeddings using the VGGish model. This implementation builds upon the [torchvggish project](https://github.com/harritaylor/torchvggish/).
 
 ```bash
-python _apply_class_pipeline_video.py
+python _apply_pipeline_video.py
 ```
 Applies the visual pipeline to extract features using the VGG-19 model. 
 
-Raw data is stored under the folder `data/raw`, while extracted features and embeddings are saved in `data/classification`.
+Raw data is stored under the folder `data/raw`, while extracted features and embeddings are saved in `data/representations`.
 
 For audio processing, we use correlated spectrograms over mono audio with the following parameters:
 
@@ -97,7 +97,7 @@ For audio processing, we use correlated spectrograms over mono audio with the fo
 
 This configuration produces **96 spectrogram frames per 1-second token**. For inference, **128-dimensional embeddings** are generated per token after passing through the VGGish pipeline.
 
-For video processing, each 1-second token consists of **16 frames**. Frames are processed through the **VGG-19** network using normalization based on pixel-stats extracted by running `data/pixel-stats` over the raw videos, and visual features are pooled as follows:
+For video processing, each 1-second token consists of **16 frames**. Frames are processed through the **VGG-19** network using normalization based on pixel statistics extracted by running `data/pixel-stats` over the raw videos, and visual features are pooled as follows:
 
 - **Temporal pooling** averages features across the 16 frames of the token.  
 - **Spatial pooling** averages across the 7×7 spatial dimensions of the VGG-19 output (512×7×7), resulting in compact feature representations.
@@ -114,47 +114,43 @@ The `.pth` file for the baseline model is provided in the repository.
 
 ### Getting Packets
 
-To simulate streaming transmission of video observations from two different sources, we apply a packetization pipeline over each video observation in the `data/AVE_trimmed` folder, breaking each observation into an auditory and a visual stream, using a `Packet` class defined in `src/packets.py`. Each packetized video observation is stored under the folder `data/packets` with separate folders for audio and video, obtained by running:
+To simulate streaming transmission of video observations from two different sources, we apply a packetization pipeline over each video observation in the `data/AVE_trimmed` folder, breaking each observation into an auditory and a visual stream, using a `Packet` class defined in `src/packetization.py`. Each packetized video observation is stored under the folder `data/packets` with separate folders for audio and video, obtained by running:
 ```bash
-python packetization.py
+python packetize.py
 ```
 
 ### Simulating Wrapper Operation
 
-To reproduce the curves reported in the paper, run the `wrapper.py` script. This script loads the baseline model, utilizes the packetized data, and operates the auditory and visual pipelines in streaming mode. The script simulates the neuro-inspired wrapper based on the TWI optimization variants described in the paper. When executing the wrapper, specify:
+To reproduce the curves reported in the paper, run the `run_wrapper.py` script. This script loads the baseline model, utilizes the packetized data, and operates the auditory and visual pipelines in streaming mode. The script simulates the neuro-inspired wrapper based on the TWI optimization variants described in the paper. When executing the wrapper, specify:
 
 - **`variant`**: Choose the TWI optimization variant, either **SotA** (to simulate the baseline), **PaMo** or **ToMo**.
 - **`snr_dB`**: Define the signal-to-noise ratio (SNR) in decibels, with valid options being **-5**, **1.1888**, and **2**, as reported in the paper.
 
 Example command:
 ```bash
-python wrapper.py --variant PaMo --snr_dB -5
+python run_wrapper.py --variant PaMo --snr_dB -5
 ```
 
-Each run produces a `.gz` file in `data/results/` containing the curve data that depicts inference performance evolution over time. After collecting the `.gz` files for the three different variants per SNR, use the `plot_per_snr.py` script to generate the curves reported in the paper. Running, for example:
+Each run produces a `.gz` file in `data/results/` containing the curve data that depicts inference performance evolution over time. After collecting the `.gz` files for the three different variants per SNR, use the `plot_per_audio_snr.py` script to generate the curves reported in the paper. Running, for example:
 ```bash
-python plot_per_snr.py --snr_dB -5
+python plot_per_audio_snr.py --snr_dB -5
 ```
 will generate the `.txt` files suitable for TikZ plotting and a sketch of the figure in `data/results/figs`.
 
 ## 📝 Citing this Repository and License
 This code is subject to the MIT license. If you use any part of this repository for research, please consider citing our work.
 
-<!--
 ```bibtex
-  @INPROCEEDINGS{10901782,
-  author={Thorsager, Mathias and Croisfelt, Victor and Shiraishi, Junya and Popovski, Petar},
-  booktitle={GLOBECOM 2024 - 2024 IEEE Global Communications Conference}, 
-  title={EcoPull: Sustainable IoT Image Retrieval Empowered by TinyML Models}, 
-  year={2024},
-  volume={},
-  number={},
-  pages={5066-5071},
-  keywords={Energy consumption;Image coding;Biological system modeling;Tiny machine learning;Image retrieval;Mathematical models;Data models;Numerical models;Internet of Things;Data communication;IoT Networks;TinyML;image retrieval;generative AI;medium access control},
-  doi={10.1109/GLOBECOM52923.2024.10901782}
+  @misc{croisfelt2025realtimeinferencedistributedmultimodal,
+      title={Real-Time Inference for Distributed Multimodal Systems under Communication Delay Uncertainty}, 
+      author={Victor Croisfelt and João Henrique Inacio de Souza and Shashi Raj Pandey and Beatriz Soret and Petar Popovski},
+      year={2025},
+      eprint={2511.16225},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2511.16225}, 
 }
 ```
--->
 
 ## 🙏 Acknowledgement
 This work was supported by the Villum Investigator Grant “WATER” from the Velux Foundation, Denmark, and by the SNS JU project 6G-GOALS under the EU's Horizon Europe program under Grant Agreement No. 101139232.
