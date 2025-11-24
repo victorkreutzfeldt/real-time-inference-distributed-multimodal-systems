@@ -1,4 +1,5 @@
 # Real-Time Inference for Distributed Multimodal Systems under Communication Delay Uncertainty
+[![arXiv](https://img.shields.io/badge/arXiv-2511.16225-b31b1b.svg)](https://arxiv.org/abs/2511.16225)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.9.0-red.svg)](https://pytorch.org/)
 [![CUDA](https://img.shields.io/badge/CUDA-12.8-yellow.svg)](https://developer.nvidia.com/cuda-toolkit)
