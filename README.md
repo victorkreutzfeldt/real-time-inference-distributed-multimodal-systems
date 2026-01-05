@@ -141,7 +141,7 @@ will generate the `.txt` files suitable for TikZ plotting and a sketch of the fi
 This code is subject to the MIT license. If you use any part of this repository for research, please consider citing our work.
 
 ```bibtex
-  @misc{croisfelt2025realtimeinferencedistributedmultimodal,
+@misc{croisfelt2025realtimeinferencedistributedmultimodal,
       title={Real-Time Inference for Distributed Multimodal Systems under Communication Delay Uncertainty}, 
       author={Victor Croisfelt and João Henrique Inacio de Souza and Shashi Raj Pandey and Beatriz Soret and Petar Popovski},
       year={2025},
